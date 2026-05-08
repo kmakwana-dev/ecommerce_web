@@ -1,0 +1,1002 @@
+[
+    {
+        "id": 61,
+        "name": "Realme 10 Pro",
+        "regular_price": 19999,
+        "sale_price": 17699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 62,
+        "name": "Nothing Phone 2",
+        "regular_price": 34999,
+        "sale_price": 33399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 63,
+        "name": "Nokia 110 - Classic Mobile Phone",
+        "regular_price": 2199,
+        "sale_price": 1599,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 64,
+        "name": "Motorola Edge 50 Neo 5G",
+        "regular_price": 37999,
+        "sale_price": 28399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 65,
+        "name": "Classic Aviator Sunglasses for Men",
+        "regular_price": 1999,
+        "sale_price": 1699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 66,
+        "name": "Classic Aviator Sunglasses with Black Frame and Dark Lens",
+        "regular_price": 1999,
+        "sale_price": 1799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 67,
+        "name": "Black Square Sunglasses",
+        "regular_price": 1999,
+        "sale_price": 1399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 68,
+        "name": "Polarized Sport Sunglasses",
+        "regular_price": 2449,
+        "sale_price": 1799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 69,
+        "name": "Ray-Ban Aviator Sunglasses",
+        "regular_price": 13999,
+        "sale_price": 11699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 70,
+        "name": "Men's Genuine Leather Wallet with Wrist Strap RFID Blocking",
+        "regular_price": 2049,
+        "sale_price": 1799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 71,
+        "name": "Men's Genuine Leather Wallet with Zipper Pocket Brown",
+        "regular_price": 1699,
+        "sale_price": 1199,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 72,
+        "name": "Leather Wallet with Flap Closure",
+        "regular_price": 1499,
+        "sale_price": 1299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 73,
+        "name": "Emporio Armani Men's Leather Wallet",
+        "regular_price": 13999,
+        "sale_price": 11999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 74,
+        "name": "Golf Zipper Leather Wallet",
+        "regular_price": 1499,
+        "sale_price": 1299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 75,
+        "name": "Men's Genuine Leather Wallet",
+        "regular_price": 1999,
+        "sale_price": 1399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 76,
+        "name": "SKULLS Men's Genuine Leather Minimalist Bifold Wallet",
+        "regular_price": 1999,
+        "sale_price": 1599,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 77,
+        "name": "Rolex Submariner Date 18k Yellow Gold",
+        "regular_price": 1111999,
+        "sale_price": 856199,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 78,
+        "name": "Red Line Chronograph Watch - Men's Fashionable Timepiece",
+        "regular_price": 4449,
+        "sale_price": 3199,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 79,
+        "name": "IWC Schaffhausen Pilot's Watch Chronograph 41",
+        "regular_price": 507999,
+        "sale_price": 426699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 80,
+        "name": "Blatec Classic Watch",
+        "regular_price": 4999,
+        "sale_price": 4299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 81,
+        "name": "Men's Fashionable Leather Strap Quartz Wrist Watch",
+        "regular_price": 4999,
+        "sale_price": 4899,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 82,
+        "name": "Omega Seamaster Aqua Terra 150M Gold Watch",
+        "regular_price": 356999,
+        "sale_price": 264099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 83,
+        "name": "Kinderberg Men's Automatic Mechanical Chronograph Watch",
+        "regular_price": 4199,
+        "sale_price": 3399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 84,
+        "name": "IWC Schaffhausen Automatic Watch",
+        "regular_price": 413999,
+        "sale_price": 322899,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 85,
+        "name": "Google Pixel 9",
+        "regular_price": 84999,
+        "sale_price": 70499,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 86,
+        "name": "Oppo Reno12 F",
+        "regular_price": 29999,
+        "sale_price": 22299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 87,
+        "name": "Infinix Hot 50 Pro Plus (8\/256GB)",
+        "regular_price": 12999,
+        "sale_price": 9399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 88,
+        "name": "vivo V27 Pro",
+        "regular_price": 34999,
+        "sale_price": 34899,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 89,
+        "name": "Athletic Fusion Compression Long Sleeve T-Shirt",
+        "regular_price": 1299,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 90,
+        "name": "Men's Track Pants with Side Zipper",
+        "regular_price": 3399,
+        "sale_price": 2699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 91,
+        "name": "Men's Casual Fashion Jogger Pants with Zipper Pockets",
+        "regular_price": 3199,
+        "sale_price": 2699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 92,
+        "name": "Men's Casual Sport Jogger Pants with Side Stripe",
+        "regular_price": 3299,
+        "sale_price": 2699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 93,
+        "name": "Monte Carlo Men's Brown Leather Monk Strap Formal Shoes",
+        "regular_price": 4999,
+        "sale_price": 4099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 94,
+        "name": "Men's Brown Leather Slip-on Shoes",
+        "regular_price": 4999,
+        "sale_price": 3899,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 95,
+        "name": "Men's Black Leather Slip-on Dress Shoes",
+        "regular_price": 4999,
+        "sale_price": 4199,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 96,
+        "name": "Loyalty American Flag Drip T-Shirt",
+        "regular_price": 1199,
+        "sale_price": 879,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 97,
+        "name": "Firefox DJ T-Shirt",
+        "regular_price": 1199,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 98,
+        "name": "Men's Fair Trade T-Shirt",
+        "regular_price": 999,
+        "sale_price": 829,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 99,
+        "name": "Men's Solid Color Short Sleeve Polo Shirt",
+        "regular_price": 1199,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 100,
+        "name": "Yellow Crew Neck Sweatshirt",
+        "regular_price": 999,
+        "sale_price": 809,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 101,
+        "name": "Men's Long Sleeve Oxford Shirt Casual Solid Color Button-Down",
+        "regular_price": 999,
+        "sale_price": 839,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 102,
+        "name": "GLADBACKER High Visibility Workwear Trousers",
+        "regular_price": 2499,
+        "sale_price": 1799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 103,
+        "name": "Men's Distressed Denim Jeans",
+        "regular_price": 2499,
+        "sale_price": 1799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 104,
+        "name": "Men's Casual Straight Leg Denim Jeans",
+        "regular_price": 2999,
+        "sale_price": 2299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 105,
+        "name": "Men's Slim Fit Blue Dress Pants",
+        "regular_price": 2999,
+        "sale_price": 2399,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 106,
+        "name": "Men's Tactical Cargo Pants Water Resistant Hiking",
+        "regular_price": 3399,
+        "sale_price": 2699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 107,
+        "name": "Men's Casual Solid Color Sweatpants",
+        "regular_price": 2649,
+        "sale_price": 1799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 108,
+        "name": "Girls' Rhinestone Embellished Skinny Jeans",
+        "regular_price": 2999,
+        "sale_price": 2499,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 109,
+        "name": "Men's Blue Denim Jeans",
+        "regular_price": 3199,
+        "sale_price": 2599,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 110,
+        "name": "Distressed Denim Jeans",
+        "regular_price": 2699,
+        "sale_price": 1899,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 111,
+        "name": "Men's Striped Kaftan",
+        "regular_price": 4449,
+        "sale_price": 3799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 112,
+        "name": "Men's Linen Robe - Relax and Rejuvenate in Comfort",
+        "regular_price": 4999,
+        "sale_price": 4799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 113,
+        "name": "Men's White Thobe with Gold Tassel",
+        "regular_price": 4999,
+        "sale_price": 3599,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 114,
+        "name": "Men's Striped Long Sleeve Casual Tunic Top",
+        "regular_price": 1499,
+        "sale_price": 949,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 115,
+        "name": "Men's Yellow Puffer Vest",
+        "regular_price": 6199,
+        "sale_price": 5299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 116,
+        "name": "Men's Yellow Hooded Jacket",
+        "regular_price": 5599,
+        "sale_price": 4299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 117,
+        "name": "Men's Maroon Puffer Jacket",
+        "regular_price": 4999,
+        "sale_price": 3999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 118,
+        "name": "Men's Distressed Denim Jacket",
+        "regular_price": 6799,
+        "sale_price": 5599,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 119,
+        "name": "Linen Blend Suit Jacket",
+        "regular_price": 20999,
+        "sale_price": 14899,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 120,
+        "name": "Beige Linen Suit",
+        "regular_price": 24999,
+        "sale_price": 20499,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 121,
+        "name": "Men's Lavender Slim Fit Suit",
+        "regular_price": 24999,
+        "sale_price": 21799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 122,
+        "name": "Men's Pink Embroidered Kurta Pajama with Jacket",
+        "regular_price": 4999,
+        "sale_price": 4099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 123,
+        "name": "Men's Orange Indo Western Sherwani with Dhoti",
+        "regular_price": 19999,
+        "sale_price": 16699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 124,
+        "name": "Men's Pink Embroidered Waistcoat with White Kurta Pajama Set",
+        "regular_price": 3399,
+        "sale_price": 2499,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 125,
+        "name": "Men's Printed Nehru Jacket",
+        "regular_price": 6449,
+        "sale_price": 4699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 126,
+        "name": "Red Floral Printed Half Sleeve Shirt",
+        "regular_price": 999,
+        "sale_price": 799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 127,
+        "name": "Men's Printed Casual Short Sleeve Shirt",
+        "regular_price": 1149,
+        "sale_price": 989,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 128,
+        "name": "Men's Printed Short Sleeve Shirt",
+        "regular_price": 1499,
+        "sale_price": 959,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 129,
+        "name": "Basic T-Shirt for Men - Plain Short Sleeve Crew Neck Cotton",
+        "regular_price": 999,
+        "sale_price": 829,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 130,
+        "name": "Men's Short Sleeve T-Shirt with Fantastic Graphic",
+        "regular_price": 1199,
+        "sale_price": 859,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 131,
+        "name": "Oversized T-Shirt with Logo",
+        "regular_price": 999,
+        "sale_price": 759,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 132,
+        "name": "Men's Green Striped T-Shirt",
+        "regular_price": 1299,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 133,
+        "name": "Man Active Performance T-Shirt - Black",
+        "regular_price": 999,
+        "sale_price": 769,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 134,
+        "name": "ELEIKO Men's T-Shirt",
+        "regular_price": 1349,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 135,
+        "name": "Camouflage Long Sleeve T-Shirt",
+        "regular_price": 1449,
+        "sale_price": 1299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 136,
+        "name": "Men's Black Camouflage Patterned T-Shirt",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 137,
+        "name": "Cute Baby Toddler Kids Reindeer Clogs Sandals",
+        "regular_price": 1249,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 138,
+        "name": "Kids Cartoon Animal Summer Beach Sandal Slippers",
+        "regular_price": 1149,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 139,
+        "name": "Kids Summer Beach Sandals Casual Non-Slip Toddler Slippers",
+        "regular_price": 1199,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 140,
+        "name": "Cute Bunny Kids Summer Slides",
+        "regular_price": 1299,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 141,
+        "name": "Cute Fish Shaped Cartoon Slippers for Kids",
+        "regular_price": 999,
+        "sale_price": 849,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 142,
+        "name": "Baby Boy's Blue Sneakers",
+        "regular_price": 1499,
+        "sale_price": 1199,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 143,
+        "name": "MIKI HOUSE Baby Boy's First Walking Shoes",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 144,
+        "name": "Baby Toddler Boys Girls First Walking Shoes Soft Sole Sneakers",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 145,
+        "name": "Baby Soft Sole Sneakers Shoes for Toddlers First Walkers",
+        "regular_price": 1299,
+        "sale_price": 939,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 146,
+        "name": "Kids Black Velcro Sneaker Shoes",
+        "regular_price": 1199,
+        "sale_price": 979,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 147,
+        "name": "White Hook and Loop Strap Sneaker",
+        "regular_price": 4849,
+        "sale_price": 3799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 148,
+        "name": "White School Shoes for Girls",
+        "regular_price": 999,
+        "sale_price": 799,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 149,
+        "name": "School Girl Black Leather Mary Jane Shoes",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 150,
+        "name": "Girls Black School Shoes",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 151,
+        "name": "Baby Girl's Summer Dress & Hat Set",
+        "regular_price": 1499,
+        "sale_price": 1299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 152,
+        "name": "Baby Girl's White Floral Embroidered Dress",
+        "regular_price": 999,
+        "sale_price": 699,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 153,
+        "name": "Girls' Pink Eyelet Dress with Ruffles",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 154,
+        "name": "Floral Print Sleeveless Dress for Baby Girls",
+        "regular_price": 1599,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 155,
+        "name": "Cherry Print Baby Dress with Hat Set",
+        "regular_price": 1499,
+        "sale_price": 999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 156,
+        "name": "Baby Girl Knit Cardigan Sweater with Bunny Print Grey",
+        "regular_price": 1499,
+        "sale_price": 1099,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 157,
+        "name": "Peach Embroidered Kids Girls Ethnic Kurta Palazzo Suit",
+        "regular_price": 22999,
+        "sale_price": 18299,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 158,
+        "name": "Baby Girl Clothes Set Summer Outfits 2-Piece Romper with T-Shirt",
+        "regular_price": 1149,
+        "sale_price": 809,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 159,
+        "name": "Kids Girls Denim Jeans Love Heart Patch Long Trousers",
+        "regular_price": 2499,
+        "sale_price": 1999,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    },
+    {
+        "id": 160,
+        "name": "Kids Girls Pink Quilted Zip Up Winter Jacket",
+        "regular_price": 5499,
+        "sale_price": 4499,
+        "price_range": {
+            "min_price": null,
+            "max_price": null
+        }
+    }
+]

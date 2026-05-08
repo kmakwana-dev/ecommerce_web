@@ -1,0 +1,12 @@
+/* Your custom css */
+.menu-item-icon {
+    font-size: 22px !important;
+    margin-right: 10px;
+}
+.menu-item-icon i {
+    font-size: 22px !important;
+}
+.menu-item-icon img {
+    width: 22px !important;
+    height: 22px !important;
+}

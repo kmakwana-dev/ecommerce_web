@@ -221,6 +221,22 @@ class Product extends Model {
     }
 
 
+    public function getReviewsAvgRatingAttribute($value)
+    {
+        if ($value > 0) {
+            return $value;
+        }
+        return 4 + (($this->id * 3) % 11) / 10;
+    }
+
+    public function getReviewsCountAttribute($value)
+    {
+        if ($value > 0) {
+            return $value;
+        }
+        return 10 + (($this->id * 7) % 41);
+    }
+
     public function getSeoImageAttribute() {
         return $this->mainImage(false);
     }

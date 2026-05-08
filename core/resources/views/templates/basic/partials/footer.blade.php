@@ -94,10 +94,10 @@
                         <div class="left">
                             @php
                                 $copyrightText = str_replace('{year}', date('Y'), $footer->copyright_text);
-                                $siteName = '<a href="' . route('home') . '">' . e(gs('site_name')) . '</a>';
+                                $siteName = '<a href="' . route('home') . '" style="color: white !important;">' . e(gs('site_name')) . '</a>';
                                 $copyrightText = str_replace('{site_name}', $siteName, $copyrightText);
                             @endphp
-                            <p>{!! __(@$copyrightText) !!}</p>
+                            <p style="color: white !important;">{!! __(@$copyrightText) !!}</p>
                         </div>
                     @endif
 

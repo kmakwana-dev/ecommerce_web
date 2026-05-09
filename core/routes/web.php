@@ -6,6 +6,15 @@ Route::get('/clear', function () {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 });
 
+Route::get('/test-mail', function () {
+    Mail::raw('SMTP Working Successfully', function ($message) {
+        $message->to('kmakwana8232@gmail.com')
+                ->subject('Test Email');
+    });
+
+    return 'Mail Sent';
+});
+
 // User Support Ticket
 Route::controller('TicketController')->prefix('ticket')->name('ticket.')->group(function () {
     Route::get('/', 'supportTicket')->name('index');

@@ -139,7 +139,7 @@ class PaymentController extends Controller {
 
         $notify[] = ['success', 'Your order has submitted successfully'];
 
-        $user = $order->guest;
+        $user = $order->user_id ? $order->user : $order->guest;
 
         sendOrderPlacedNotification($user, $order);
         session()->forget('shipping_info');

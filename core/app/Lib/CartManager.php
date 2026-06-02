@@ -232,14 +232,21 @@ class CartManager
         $cartItem->quantity  = $quantity;
         $cartItem->save();
 
+        $this->clearCheckoutPaymentSession();
         $this->removeCouponFromSession();
     }
 
     public function removeCouponFromSession()
     {
         if (session()->has('coupon')) {
+            $this->clearCheckoutPaymentSession();
             session()->forget('coupon');
         }
+    }
+
+    public function clearCheckoutPaymentSession()
+    {
+        session()->forget(['order_id', 'Track']);
     }
 
     public function getCouponByCode(string $code)

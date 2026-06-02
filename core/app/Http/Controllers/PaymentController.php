@@ -39,6 +39,23 @@ class PaymentController extends Controller {
         $subtotal       = $this->cartManager->subtotal();
         $coupon         = session('coupon');
 
+        // If cart subtotal changes after a pending order was initiated, reuse of the old order_id/Track
+        // will lead to stale amounts on payment/deposit pages. Invalidate the in-progress checkout session
+        // when the current cart no longer matches the stored order.
+        $orderId = session()->get('order_id');
+        if ($orderId) {
+            $order = Order::find($orderId);
+            if (!$order) {
+                session()->forget(['order_id', 'Track']);
+            } else {
+                $currentSubtotal = (float) getAmount($subtotal);
+                $orderSubtotal   = (float) getAmount($order->subtotal);
+                if ($orderSubtotal !== $currentSubtotal) {
+                    session()->forget(['order_id', 'Track']);
+                }
+            }
+        }
+
         return view('Template::checkout_steps.payment_methods', compact('pageTitle', 'gatewayCurrencies', 'shippingMethod', 'subtotal', 'coupon', 'hasPhysicalProduct'));
     }
 

@@ -158,6 +158,8 @@ class CartController extends Controller
         }
 
         $cart->delete();
+        // If cart contents change, any in-progress checkout/payment session becomes stale.
+        $this->cartManager->clearCheckoutPaymentSession();
         $this->cartManager->removeCouponFromSession();
 
         return successResponse('Item deleted successfully', [

@@ -55,12 +55,12 @@
                                     </div>
 
                                     <div class="form-group col-sm-6">
-                                        <label class="form-label">@lang('State')</label>
-                                        <input type="text" class="form-control form--control" name="state" value="{{ old('state') }}">
-                                    </div>
-                                    <div class="form-group col-sm-6">
                                         <label class="form-label">@lang('City')</label>
                                         <input type="text" class="form-control form--control" name="city" value="{{ old('city') }}">
+                                    </div>
+                                    <div class="form-group col-sm-6">
+                                        <label class="form-label">@lang('State')</label>
+                                        <input type="text" class="form-control form--control" name="state" value="{{ old('state') }}">
                                     </div>
 
                                     <div class="form-group col-sm-6">

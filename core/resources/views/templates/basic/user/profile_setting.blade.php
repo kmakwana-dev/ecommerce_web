@@ -76,15 +76,15 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>@lang('State')</label>
-                                    <input class="form--control" type="text" name="state" value="{{ $user->state }}" placeholder="@lang('State')">
+                                    <label>@lang('City')</label>
+                                    <input class="form--control" type="text" name="city" value="{{ $user->city }}" placeholder="@lang('City')">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label>@lang('City')</label>
-                                    <input class="form--control" type="text" name="city" value="{{ $user->city }}" placeholder="@lang('City')">
+                                    <label>@lang('State')</label>
+                                    <input class="form--control" type="text" name="state" value="{{ $user->state }}" placeholder="@lang('State')">
                                 </div>
                             </div>
                             <div class="col-md-6">

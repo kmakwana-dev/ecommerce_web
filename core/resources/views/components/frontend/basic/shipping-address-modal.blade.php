@@ -43,6 +43,12 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
+                                <label>@lang('Zip')</label>
+                                <input type="text" class="form-control form--control" name="zip" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
                                 <label>@lang('City')</label>
                                 <input type="text" class="form-control form--control" name="city" required>
                             </div>
@@ -55,17 +61,11 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label>@lang('Zip')</label>
-                                <input type="text" class="form-control form--control" name="zip" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
                                 <label>@lang('Country')</label>
-                                <select name="country" class="form-control form--control form-select select2">
-                                    <option value="" hidden>@lang('Select One')</option>
+                                <input type="hidden" name="country" value="India">
+                                <select class="form-control form--control form-select select2" disabled>
                                     @foreach ($countries as $country)
-                                        <option value="{{ $country->country }}">{{ __($country->country) }}</option>
+                                        <option value="{{ $country->country }}" @if($country->country == 'India') selected @endif>{{ __($country->country) }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -121,6 +121,40 @@
 
             modal.on('hidden.bs.modal', function() {
                 modal.find('form')[0].reset();
+            });
+
+            let lastPincode = '';
+            modal.find('[name=zip]').on('input', function() {
+                let pincode = $(this).val();
+                if(pincode.length >= 6 && pincode !== lastPincode) {
+                    lastPincode = pincode;
+                    let cityInput = modal.find('[name=city]');
+                    let stateInput = modal.find('[name=state]');
+                    
+                    let oldCity = cityInput.val();
+                    let oldState = stateInput.val();
+
+                    cityInput.val('Fetching...');
+                    stateInput.val('Fetching...');
+
+                    $.ajax({
+                        url: `{{ url('pincode') }}/${pincode}`,
+                        type: 'GET',
+                        success: function(response) {
+                            if(response.success) {
+                                cityInput.val(response.city);
+                                stateInput.val(response.state);
+                            } else {
+                                cityInput.val(oldCity === 'Fetching...' ? '' : oldCity);
+                                stateInput.val(oldState === 'Fetching...' ? '' : oldState);
+                            }
+                        },
+                        error: function() {
+                            cityInput.val(oldCity === 'Fetching...' ? '' : oldCity);
+                            stateInput.val(oldState === 'Fetching...' ? '' : oldState);
+                        }
+                    });
+                }
             });
 
         })(jQuery);

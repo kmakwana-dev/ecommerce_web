@@ -69,6 +69,13 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
+                                    <label>@lang('Zip')</label>
+                                    <input class="form--control" type="text" name="zip" value="{{ $user->zip }}" placeholder="@lang('Zip')">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
                                     <label>@lang('State')</label>
                                     <input class="form--control" type="text" name="state" value="{{ $user->state }}" placeholder="@lang('State')">
                                 </div>
@@ -80,13 +87,6 @@
                                     <input class="form--control" type="text" name="city" value="{{ $user->city }}" placeholder="@lang('City')">
                                 </div>
                             </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>@lang('Zip')</label>
-                                    <input class="form--control" type="text" name="zip" value="{{ $user->zip }}" placeholder="@lang('Zip')">
-                                </div>
-                            </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>@lang('Address')</label>
@@ -96,9 +96,10 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>@lang('Country')</label>
-                                    <select class="form--control" name="country">
+                                    <input type="hidden" name="country" value="India">
+                                    <select class="form--control country-select" disabled>
                                         @foreach($countries as $country)
-                                            <option value="{{ $country->country }}">{{ __($country->country) }}</option>
+                                            <option value="{{ $country->country }}" @if($country->country == 'India') selected @endif>{{ __($country->country) }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -118,10 +119,6 @@
     <script>
         'use strict';
         (function($) {
-            @if($user->country_name)
-                $('select[name=country]').val("{{ $user->country_name }}");
-            @endif
-
             $("#file-input").on('change', function() {
                 readURL(this);
             });
@@ -137,6 +134,40 @@
                     reader.readAsDataURL(input.files[0]);
                 }
             }
+
+            let lastPincode = '';
+            $('input[name=zip]').on('input', function() {
+                let pincode = $(this).val();
+                if(pincode.length >= 6 && pincode !== lastPincode) {
+                    lastPincode = pincode;
+                    let cityInput = $('input[name=city]');
+                    let stateInput = $('input[name=state]');
+                    
+                    let oldCity = cityInput.val();
+                    let oldState = stateInput.val();
+
+                    cityInput.val('Fetching...');
+                    stateInput.val('Fetching...');
+
+                    $.ajax({
+                        url: `{{ url('pincode') }}/${pincode}`,
+                        type: 'GET',
+                        success: function(response) {
+                            if(response.success) {
+                                cityInput.val(response.city);
+                                stateInput.val(response.state);
+                            } else {
+                                cityInput.val(oldCity === 'Fetching...' ? '' : oldCity);
+                                stateInput.val(oldState === 'Fetching...' ? '' : oldState);
+                            }
+                        },
+                        error: function() {
+                            cityInput.val(oldCity === 'Fetching...' ? '' : oldCity);
+                            stateInput.val(oldState === 'Fetching...' ? '' : oldState);
+                        }
+                    });
+                }
+            });
         })(jQuery)
     </script>
 @endpush

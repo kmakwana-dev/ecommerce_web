@@ -261,4 +261,31 @@ class SiteController extends Controller {
             'is_cod' => $orderData->is_cod,
         ]);
     }
+    public function getPincodeInfo($pincode) {
+        $file = base_path('../pincode.csv');
+        if (!file_exists($file)) {
+            return response()->json(['error' => 'Pincode data not found']);
+        }
+
+        $handle = fopen($file, "r");
+        if ($handle) {
+            $search = '","' . $pincode . '","';
+            while (($line = fgets($handle)) !== false) {
+                if (strpos($line, $search) !== false) {
+                    $data = str_getcsv($line);
+                    if (isset($data[4]) && $data[4] == $pincode) {
+                        fclose($handle);
+                        return response()->json([
+                            'success' => true,
+                            'city' => ucfirst(strtolower($data[7])),
+                            'state' => ucwords(strtolower($data[8])),
+                            'country' => 'India'
+                        ]);
+                    }
+                }
+            }
+            fclose($handle);
+        }
+        return response()->json(['error' => 'Pincode not found']);
+    }
 }

@@ -6,15 +6,6 @@ Route::get('/clear', function () {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 });
 
-Route::get('/test-mail', function () {
-    Mail::raw('SMTP Working Successfully', function ($message) {
-        $message->to('kmakwana8232@gmail.com')
-                ->subject('Test Email');
-    });
-
-    return 'Mail Sent';
-});
-
 // User Support Ticket
 Route::controller('TicketController')->prefix('ticket')->name('ticket.')->group(function () {
     Route::get('/', 'supportTicket')->name('index');
@@ -100,6 +91,7 @@ Route::controller('SiteController')->group(function () {
     Route::get('brands', 'brands')->name('brands');
     Route::get('track-order', 'trackOrder')->name('order.track');
     Route::get('order-data/{order_number}', 'getOrderTrackData')->name('track.order');
+    Route::get('pincode/{pincode}', 'getPincodeInfo')->name('pincode.info');
     Route::post('subscribe', 'addSubscriber')->name('subscribe');
     Route::get('faq', 'faq')->name('faq');
     Route::get('about-us', 'about')->name('about');

@@ -27,9 +27,10 @@
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label class="form-label">@lang('Country')</label>
-                                            <select name="country" class="form-control form--control select2" required>
+                                            <input type="hidden" name="country" value="India">
+                                            <select class="form-control form--control select2 country-select" disabled>
                                                 @foreach ($countries as $key => $country)
-                                                    <option data-mobile_code="{{ $country->dial_code }}" value="{{ $country->country }}" data-code="{{ $key }}">{{ __($country->country) }}
+                                                    <option data-mobile_code="{{ $country->dial_code }}" value="{{ $country->country }}" data-code="{{ $key }}" @if($country->country == 'India') selected @endif>{{ __($country->country) }}
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -49,16 +50,17 @@
                                     </div>
 
                                     <div class="form-group col-sm-6">
+                                        <label class="form-label">@lang('Zip Code')</label>
+                                        <input type="text" class="form-control form--control" name="zip" value="{{ old('zip') }}">
+                                    </div>
+
+                                    <div class="form-group col-sm-6">
                                         <label class="form-label">@lang('State')</label>
                                         <input type="text" class="form-control form--control" name="state" value="{{ old('state') }}">
                                     </div>
                                     <div class="form-group col-sm-6">
                                         <label class="form-label">@lang('City')</label>
                                         <input type="text" class="form-control form--control" name="city" value="{{ old('city') }}">
-                                    </div>
-                                    <div class="form-group col-sm-6">
-                                        <label class="form-label">@lang('Zip Code')</label>
-                                        <input type="text" class="form-control form--control" name="zip" value="{{ old('zip') }}">
                                     </div>
 
                                     <div class="form-group col-sm-6">
@@ -103,23 +105,23 @@
             });
 
             @if ($mobileCode)
-                $('select[name=country]').val($(`option[data-code={{ $mobileCode }}]`).val()).select2({
-                    dropdownParent: $('select[name=country]').parent()
+                $('.country-select').val($(`option[data-code={{ $mobileCode }}]`).val()).select2({
+                    dropdownParent: $('.country-select').parent()
                 });
             @endif
 
-            $('select[name=country]').on('change', function() {
-                $('input[name=mobile_code]').val($('select[name=country] :selected').data('mobile_code'));
-                $('input[name=country_code]').val($('select[name=country] :selected').data('code'));
-                $('.mobile-code').text('+' + $('select[name=country] :selected').data('mobile_code'));
+            $('.country-select').on('change', function() {
+                $('input[name=mobile_code]').val($('.country-select :selected').data('mobile_code'));
+                $('input[name=country_code]').val($('.country-select :selected').data('code'));
+                $('.mobile-code').text('+' + $('.country-select :selected').data('mobile_code'));
                 var value = $('[name=mobile]').val();
                 var name = 'mobile';
                 checkUser(value, name);
             });
 
-            $('input[name=mobile_code]').val($('select[name=country] :selected').data('mobile_code'));
-            $('input[name=country_code]').val($('select[name=country] :selected').data('code'));
-            $('.mobile-code').text('+' + $('select[name=country] :selected').data('mobile_code'));
+            $('input[name=mobile_code]').val($('.country-select :selected').data('mobile_code'));
+            $('input[name=country_code]').val($('.country-select :selected').data('code'));
+            $('.mobile-code').text('+' + $('.country-select :selected').data('mobile_code'));
 
 
             $('.checkUser').on('focusout', function(e) {
@@ -154,6 +156,41 @@
                     }
                 });
             }
+
+            let lastPincode = '';
+            $('input[name=zip]').on('input', function() {
+                let pincode = $(this).val();
+                if(pincode.length >= 6 && pincode !== lastPincode) {
+                    lastPincode = pincode;
+                    let cityInput = $('input[name=city]');
+                    let stateInput = $('input[name=state]');
+                    
+                    let oldCity = cityInput.val();
+                    let oldState = stateInput.val();
+
+                    cityInput.val('Fetching...');
+                    stateInput.val('Fetching...');
+
+                    $.ajax({
+                        url: `{{ url('pincode') }}/${pincode}`,
+                        type: 'GET',
+                        success: function(response) {
+                            if(response.success) {
+                                cityInput.val(response.city);
+                                stateInput.val(response.state);
+                            } else {
+                                cityInput.val(oldCity === 'Fetching...' ? '' : oldCity);
+                                stateInput.val(oldState === 'Fetching...' ? '' : oldState);
+                            }
+                        },
+                        error: function() {
+                            cityInput.val(oldCity === 'Fetching...' ? '' : oldCity);
+                            stateInput.val(oldState === 'Fetching...' ? '' : oldState);
+                        }
+                    });
+                }
+            });
+
         })(jQuery);
     </script>
 @endpush

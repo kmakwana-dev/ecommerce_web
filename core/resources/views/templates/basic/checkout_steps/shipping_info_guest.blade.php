@@ -90,15 +90,15 @@
 
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>@lang('State')</label>
-                        <input type="text" value="{{ @$shippingInformation->state }}" class="form-control form--control" name="state" required>
+                        <label>@lang('City')</label>
+                        <input type="text" value="{{ @$shippingInformation->city }}" class="form-control form--control" name="city" required>
                     </div>
                 </div>
 
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>@lang('City')</label>
-                        <input type="text" value="{{ @$shippingInformation->city }}" class="form-control form--control" name="city" required>
+                        <label>@lang('State')</label>
+                        <input type="text" value="{{ @$shippingInformation->state }}" class="form-control form--control" name="state" required>
                     </div>
                 </div>
 

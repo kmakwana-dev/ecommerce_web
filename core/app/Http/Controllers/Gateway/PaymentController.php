@@ -23,7 +23,7 @@ class PaymentController extends Controller {
             return  to_route('deposit.manual.confirm');
         }
 
-        $dirName = $deposit->gateway->alias;
+        $dirName = ucfirst($deposit->gateway->alias);
         $new = __NAMESPACE__ . '\\' . $dirName . '\\ProcessController';
 
         $data = $new::process($deposit);

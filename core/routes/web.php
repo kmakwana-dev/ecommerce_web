@@ -1,12 +1,48 @@
 <?php
 
+/**
+ * FILE LOCATION: core/routes/web.php
+ *
+ * CHANGES vs original:
+ *   1. Added IPN routes for Jio gateway (ipn.jio, ipn.jio.status)
+ *      — these must be outside auth middleware so SprintNXT can POST to them
+ *   2. Added Razorpay IPN route (ipn.razorpay) in case it was missing
+ *
+ * ALL other routes are unchanged — copy-pasted exactly.
+ */
+
 use Illuminate\Support\Facades\Route;
 
 Route::get('/clear', function () {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
 });
 
-// User Support Ticket
+// ─────────────────────────────────────────────────────────────────────────────
+//  Payment Gateway IPN / Webhook routes
+//  MUST be public (no auth middleware) so payment gateways can POST to them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Razorpay IPN
+Route::post(
+    'ipn/razorpay',
+    'Gateway\Razorpay\ProcessController@ipn'
+)->name('ipn.razorpay');
+
+// Jio (SprintNXT) — Webhook: SprintNXT POSTs encrypted payload here after payment
+Route::post(
+    'ipn/jio',
+    'Gateway\Jio\ProcessController@ipn'
+)->name('ipn.jio')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+// Jio — AJAX status polling from the payment page (GET)
+Route::get(
+    'ipn/jio/status',
+    'Gateway\Jio\ProcessController@checkStatus'
+)->name('ipn.jio.status');
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  User Support Ticket
+// ─────────────────────────────────────────────────────────────────────────────
 Route::controller('TicketController')->prefix('ticket')->name('ticket.')->group(function () {
     Route::get('/', 'supportTicket')->name('index');
     Route::get('new', 'openSupportTicket')->name('open');

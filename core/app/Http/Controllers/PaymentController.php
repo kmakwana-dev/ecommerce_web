@@ -279,11 +279,13 @@ class PaymentController extends Controller {
         return $order;
     }
 
-    private function getOrderNumber($digit = 5) {
-        $prefix = 'OID-';
-        $last = Order::max('id') + 1;
-        $formattedLast = str_pad($last, $digit, '0', STR_PAD_LEFT);
-        return $prefix . $formattedLast;
+    private function getOrderNumber() {
+        $prefix = 'ORD';
+        do {
+            $orderNumber = $prefix . date('Ymd') . strtoupper(Str::random(8));
+        } while (Order::where('order_number', $orderNumber)->exists());
+
+        return $orderNumber;
     }
 
     private function checkStock($cartData) {

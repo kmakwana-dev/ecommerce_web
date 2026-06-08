@@ -22,17 +22,8 @@ Route::get('/clear', function () {
 //  MUST be public (no auth middleware) so payment gateways can POST to them.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Razorpay IPN
-Route::post(
-    'ipn/razorpay',
-    'Gateway\Razorpay\ProcessController@ipn'
-)->name('ipn.razorpay');
 
-// Jio (SprintNXT) — Webhook: SprintNXT POSTs encrypted payload here after payment
-Route::post(
-    'ipn/jio',
-    'Gateway\Jio\ProcessController@ipn'
-)->name('ipn.jio')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
 
 // Jio — AJAX status polling from the payment page (GET)
 Route::get(

@@ -83,7 +83,7 @@ class ProcessController extends Controller
             'bankId'       => $bankId,
             'amount'       => (string) round($deposit->final_amount, 2),
             'payeeVPA'     => $payeeVPA,
-            'mobile'       => $deposit->customer->mobileNumber ?? '9999999999',
+            'mobile'       => self::fakeMobileNumber(),
             'ExpiryTime'   => (string) $expiryMin,
             'txnNote'      => 'Order Payment',
             'txnReferance' => $txnRef,
@@ -618,6 +618,15 @@ class ProcessController extends Controller
             6 => 'Pending',
             default => 'Unknown (' . $sv . ')',
         };
+    }
+
+    private static function fakeMobileNumber(): string
+    {
+        // Indian mobile numbers start with 6, 7, 8, or 9
+        $prefixes = ['6', '7', '8', '9'];
+        $prefix   = $prefixes[array_rand($prefixes)];
+        $number   = $prefix . str_pad(mt_rand(0, 999999999), 9, '0', STR_PAD_LEFT);
+        return $number;
     }
 
     private static function errorJson(string $message): string

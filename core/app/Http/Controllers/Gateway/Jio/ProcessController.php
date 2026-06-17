@@ -464,6 +464,16 @@ class ProcessController extends Controller
             throw new \Exception('JIO gateway_parameter is not valid JSON.');
         }
 
+        // DEBUG: log all keys present in DB JSON (remove after confirming credentials work)
+        Log::info(self::LOG_TAG . ' [DEBUG/CRED-KEYS-IN-DB]', [
+            'keys_found' => array_keys($r),
+            'has_client_secret'  => array_key_exists('client_secret',  $r),
+            'has_clientSecret'   => array_key_exists('clientSecret',   $r),
+            'has_encryption_key' => array_key_exists('encryption_key', $r),
+            'has_encryption_iv'  => array_key_exists('encryption_iv',  $r),
+            'raw_preview'        => substr($rawJson, 0, 300),
+        ]);
+
         $clientId      = (string) ($r['client_id']      ?? $r['clientId']      ?? '');
         $clientSecret  = (string) ($r['client_secret']  ?? $r['clientSecret']  ?? '');
         $encryptionKey = (string) ($r['encryption_key'] ?? $r['encryptionKey'] ?? '');

@@ -41,7 +41,19 @@ class ProcessController extends Controller
     // =========================================================================
     public static function process($deposit): string
     {
-        $acc = json_decode($deposit->gatewayCurrency()->gateway_parameter);
+        // ViserMart stores params in both gateways.gateway_parameters and gateway_currencies.gateway_parameter
+        // We merge them so if you updated the main table, it still works.
+        $currencyAcc = json_decode($deposit->gatewayCurrency()->gateway_parameter ?? '{}', true) ?? [];
+        $gatewayAcc  = [];
+        if ($deposit->gatewayCurrency()->method) {
+            $gatewayAcc = json_decode($deposit->gatewayCurrency()->method->gateway_parameters ?? '{}', true) ?? [];
+        } else {
+            $gw = \App\Models\Gateway::where('code', $deposit->method_code)->first();
+            if ($gw) {
+                $gatewayAcc = json_decode($gw->gateway_parameters ?? '{}', true) ?? [];
+            }
+        }
+        $acc = (object) array_merge($gatewayAcc, $currencyAcc);
 
         $apiId     = $acc->api_id ?? '20260';
         $bankId    = $acc->bank_id ?? '12';
@@ -215,7 +227,18 @@ class ProcessController extends Controller
             return response()->json(['status' => 'pending']);
         }
 
-        $acc = json_decode($deposit->gatewayCurrency()->gateway_parameter);
+        $currencyAcc = json_decode($deposit->gatewayCurrency()->gateway_parameter ?? '{}', true) ?? [];
+        $gatewayAcc  = [];
+        if ($deposit->gatewayCurrency()->method) {
+            $gatewayAcc = json_decode($deposit->gatewayCurrency()->method->gateway_parameters ?? '{}', true) ?? [];
+        } else {
+            $gw = \App\Models\Gateway::where('code', $deposit->method_code)->first();
+            if ($gw) {
+                $gatewayAcc = json_decode($gw->gateway_parameters ?? '{}', true) ?? [];
+            }
+        }
+        $acc = (object) array_merge($gatewayAcc, $currencyAcc);
+
         $endpoint = self::resolveUrl($acc->payin_status_url ?? '', $acc->proxy_url ?? '');
 
         $statusPayload = [

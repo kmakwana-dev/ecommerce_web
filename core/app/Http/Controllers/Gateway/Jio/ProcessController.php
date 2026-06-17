@@ -435,51 +435,44 @@ class ProcessController extends Controller
      *   2. $model->gateway_parameters            (if $model IS already the Gateway)
      *   3. $model->gateway_parameter             (legacy column name without 's')
      */
+    /**
+     * Read credentials directly from the gateways table by alias='jio'.
+     * This bypasses the gateway_currencies relation entirely — credentials
+     * live in gateways.gateway_parameters (id=60, alias='Jio').
+     */
     private static function extractRawJson($model): string
     {
-        // Try to get the parent Gateway model's credentials first
-        $gatewayModel = null;
-        if (method_exists($model, 'gateway') || isset($model->gateway)) {
-            try { $gatewayModel = $model->gateway; } catch (\Throwable $e) {}
-        }
+        // Direct lookup from gateways table — most reliable approach
+        $gateway = \App\Models\Gateway::where('alias', 'Jio')->first()
+                ?? \App\Models\Gateway::where('alias', 'jio')->first()
+                ?? \App\Models\Gateway::find(60);
 
-        // Walk through lookup chain
-        $raw = null;
-        if ($gatewayModel) {
-            $raw = $gatewayModel->gateway_parameters
-                ?? $gatewayModel->gateway_parameter
-                ?? null;
+        if ($gateway) {
+            $raw = $gateway->gateway_parameters ?? $gateway->gateway_parameter ?? null;
             Log::info(self::LOG_TAG . ' [DEBUG/CRED-SOURCE]', [
-                'source'     => 'gateways table',
-                'gateway_id' => $gatewayModel->id   ?? 'N/A',
-                'alias'      => $gatewayModel->alias ?? 'N/A',
+                'source'     => 'gateways table direct',
+                'gateway_id' => $gateway->id,
+                'alias'      => $gateway->alias,
+                'has_raw'    => !empty($raw),
             ]);
+            if (!empty($raw)) {
+                return is_array($raw) ? json_encode($raw) : (string) $raw;
+            }
         }
 
-        // Fallback: maybe $model itself is the Gateway, or gateway_currencies has the JSON
-        if ($raw === null) {
-            $raw = $model->gateway_parameters
-                ?? $model->gateway_parameter
-                ?? null;
-            Log::info(self::LOG_TAG . ' [DEBUG/CRED-SOURCE]', [
-                'source'  => 'gateway_currencies fallback',
-                'model_id'=> $model->id ?? 'N/A',
-            ]);
+        // Last-resort fallback: try the model passed in
+        $raw = $model->gateway_parameters ?? $model->gateway_parameter ?? null;
+        Log::warning(self::LOG_TAG . ' [DEBUG/CRED-SOURCE]', [
+            'source'   => 'model fallback',
+            'model_id' => $model->id ?? 'N/A',
+            'has_raw'  => !empty($raw),
+        ]);
+
+        if (empty($raw)) {
+            throw new \Exception('Could not find JIO credentials. Check gateways table alias=Jio id=60.');
         }
 
-        if ($raw === null) {
-            Log::error(self::LOG_TAG . ' [ERR/CRED-NOT-FOUND]', [
-                'gateway_keys'   => $gatewayModel ? array_keys($gatewayModel->getAttributes()) : [],
-                'currency_keys'  => array_keys($model->getAttributes()),
-            ]);
-            throw new \Exception('Could not find JIO credentials in gateways or gateway_currencies.');
-        }
-
-        if (is_array($raw) || is_object($raw)) {
-            return json_encode($raw);
-        }
-
-        return (string) $raw;
+        return is_array($raw) ? json_encode($raw) : (string) $raw;
     }
 
     /**

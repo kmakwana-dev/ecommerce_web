@@ -53,7 +53,7 @@ class ProcessController extends Controller
                 $gatewayAcc = json_decode($gw->gateway_parameters ?? '{}', true) ?? [];
             }
         }
-        $acc = (object) array_merge($gatewayAcc, $currencyAcc);
+        $acc = (object) array_merge($currencyAcc, $gatewayAcc);
 
         $apiId     = $acc->api_id ?? '20260';
         $bankId    = $acc->bank_id ?? '12';
@@ -237,7 +237,7 @@ class ProcessController extends Controller
                 $gatewayAcc = json_decode($gw->gateway_parameters ?? '{}', true) ?? [];
             }
         }
-        $acc = (object) array_merge($gatewayAcc, $currencyAcc);
+        $acc = (object) array_merge($currencyAcc, $gatewayAcc);
 
         $endpoint = self::resolveUrl($acc->payin_status_url ?? '', $acc->proxy_url ?? '');
 

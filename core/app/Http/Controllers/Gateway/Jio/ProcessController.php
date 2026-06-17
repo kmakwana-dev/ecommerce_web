@@ -423,22 +423,58 @@ class ProcessController extends Controller
      * This method tries both and also handles the case where Laravel has
      * already decoded the JSON into an array/object (json cast on the model).
      */
-    private static function extractRawJson($gatewayCurrency): string
+    /**
+     * Extract gateway_parameters JSON from the GATEWAYS table (not gateway_currencies).
+     *
+     * ViserMart stores the real credentials in gateways.gateway_parameters (the admin-editable
+     * JSON you see in the DB screenshot). The gateway_currencies row only holds per-currency
+     * config and its gateway_parameters may be empty or hold a different schema.
+     *
+     * Lookup chain:
+     *   1. $model->gateway->gateway_parameters   (GatewayCurrency → Gateway relation)
+     *   2. $model->gateway_parameters            (if $model IS already the Gateway)
+     *   3. $model->gateway_parameter             (legacy column name without 's')
+     */
+    private static function extractRawJson($model): string
     {
-        // Try both column name variants
-        $raw = $gatewayCurrency->gateway_parameter
-            ?? $gatewayCurrency->gateway_parameters
-            ?? null;
-
-        if ($raw === null) {
-            // Log all available attributes to help diagnose column name issues
-            Log::error(self::LOG_TAG . ' [ERR/CRED-COLUMN-NOT-FOUND]', [
-                'available_keys' => array_keys($gatewayCurrency->getAttributes()),
-            ]);
-            throw new \Exception('Could not find gateway credential column. Check laravel.log for available keys.');
+        // Try to get the parent Gateway model's credentials first
+        $gatewayModel = null;
+        if (method_exists($model, 'gateway') || isset($model->gateway)) {
+            try { $gatewayModel = $model->gateway; } catch (\Throwable $e) {}
         }
 
-        // If Laravel cast it to array/object already, re-encode to string
+        // Walk through lookup chain
+        $raw = null;
+        if ($gatewayModel) {
+            $raw = $gatewayModel->gateway_parameters
+                ?? $gatewayModel->gateway_parameter
+                ?? null;
+            Log::info(self::LOG_TAG . ' [DEBUG/CRED-SOURCE]', [
+                'source'     => 'gateways table',
+                'gateway_id' => $gatewayModel->id   ?? 'N/A',
+                'alias'      => $gatewayModel->alias ?? 'N/A',
+            ]);
+        }
+
+        // Fallback: maybe $model itself is the Gateway, or gateway_currencies has the JSON
+        if ($raw === null) {
+            $raw = $model->gateway_parameters
+                ?? $model->gateway_parameter
+                ?? null;
+            Log::info(self::LOG_TAG . ' [DEBUG/CRED-SOURCE]', [
+                'source'  => 'gateway_currencies fallback',
+                'model_id'=> $model->id ?? 'N/A',
+            ]);
+        }
+
+        if ($raw === null) {
+            Log::error(self::LOG_TAG . ' [ERR/CRED-NOT-FOUND]', [
+                'gateway_keys'   => $gatewayModel ? array_keys($gatewayModel->getAttributes()) : [],
+                'currency_keys'  => array_keys($model->getAttributes()),
+            ]);
+            throw new \Exception('Could not find JIO credentials in gateways or gateway_currencies.');
+        }
+
         if (is_array($raw) || is_object($raw)) {
             return json_encode($raw);
         }

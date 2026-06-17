@@ -9,37 +9,31 @@
  * Supports proxy routing via X-PG-Target-Host (Indian VPS Nginx).
  * ─────────────────────────────────────────────────────────────────────────────
  *
- * GATEWAY DB REQUIREMENTS:
- *   gateways.code = 60  (must be < 1000 so automatic flow fires)
- *   gateway_currencies.gateway_parameter = JSON (see schema below)
- *
- * gateway_parameter JSON schema (store all of these in MySQL):
+ * gateway_parameter JSON (store in gateway_currencies.gateway_parameter):
  * {
- *   "client_id":        "U1BSX05YVF9sb2...",          ← base64-encoded before sending as header
- *   "client_secret":    "your_client_secret",          ← used inside encrypted Token payload
- *   "api_id":           "20260",                       ← QR/intent init
- *   "api_id_status":    "20247",                       ← status check
+ *   "client_id":        "SPR_NXT_prod_fb358171f6796c29",
+ *   "client_secret":    "YOUR_SECRET",
+ *   "api_id":           "20260",
+ *   "api_id_status":    "20247",
  *   "bank_id":          "12",
- *   "payee_vpa":        "sprintnxt.8080@jiomerchant",
+ *   "payee_vpa":        "whimsicraftsolu.8080@jiomerchant",
  *   "expiry_time":      "10",
  *   "is_production":    true,
- *   "encryption_key":   "56c271c135e53d1a0281ea8b0b6c8e02",   ← 32 bytes for AES-256
- *   "encryption_iv":    "5158c4f228be322e",                   ← 16 bytes for AES-CBC
- *   "payin_init_url":   "https://nxt.sprintnxt.in/PayInExposeNxt/api/v2/UPIService/UPI",
- *   "payin_status_url": "https://nxt.sprintnxt.in/NextgenAPIExpose/api/v2/UPIService/UPI",
- *   "proxy_url":        "https://checkout.novafin.tech"        ← leave empty/null for direct
+ *   "encryption_key":   "a0abf9087bd5b887a9a0f8d68c82eebc",
+ *   "encryption_iv":    "c7a1a97450f3985c",
+ *   "payin_init_url":   "https://api.sprintnxt.in/api/v2/UPIService/UPI",
+ *   "payin_status_url": "https://api.sprintnxt.in/api/v2/UPIService/UPI",
+ *   "proxy_url":        "https://checkout.novafin.tech"
  * }
  *
- * HOW PROXY WORKS:
- *   When proxy_url is set, all HTTP calls go to checkout.novafin.tech (Indian VPS).
- *   The header X-PG-Target-Host tells the Nginx there which upstream to forward to.
- *   Flow: Singapore App → checkout.novafin.tech (Nginx) → real JIO/SprintNXT API
+ * PROXY FLOW:
+ *   Singapore App → checkout.novafin.tech (Indian VPS Nginx) → api.sprintnxt.in
+ *   Header X-PG-Target-Host = "api.sprintnxt.in" tells Nginx which upstream to use.
  *
- * TOKEN GENERATION (matches Node.js exactly):
- *   payload = JSON { client_secret, requestid (9-digit random), timestamp (unix epoch) }
- *   token   = AES-256-CBC encrypt(payload, encryption_key, encryption_iv) → base64
- *   header  = "Token: <base64_ciphertext>"
- *   Client-id header = base64_encode(client_id)   ← Node does this too
+ * TOKEN (matches Node.js generateJioToken exactly):
+ *   payload = JSON { client_secret, requestid (9-digit random), timestamp (epoch) }
+ *   token   = AES-256-CBC(payload, key[0..31], iv[0..15]) → base64
+ *   Client-id header = base64_encode(client_id)
  */
 
 namespace App\Http\Controllers\Gateway\Jio;
@@ -58,19 +52,19 @@ class ProcessController extends Controller
 
     // =========================================================================
     //  STEP 1 — QR / Intent Initiation
-    //  Called by PaymentController::depositConfirm() via static process()
     // =========================================================================
     public static function process($deposit): string
     {
         try {
-            $creds = self::resolveCredentials($deposit->gatewayCurrency()->gateway_parameter);
+            $raw   = self::extractRawJson($deposit->gatewayCurrency());
+            $creds = self::resolveCredentials($raw);
         } catch (\Exception $e) {
-            Log::error(self::LOG_TAG . ' [ERR/INIT-CRED-MISSING]', ['msg' => $e->getMessage()]);
+            Log::error(self::LOG_TAG . ' [ERR/INIT-CRED]', ['msg' => $e->getMessage()]);
             return self::errorJson($e->getMessage());
         }
 
         $txnRef   = self::makeTxnRef($deposit->trx);
-        $endpoint = self::rewriteUrl($creds['payin_init_url'], $creds['proxy_url']);
+        $endpoint = $creds['payin_init_url']; // already rewritten through proxy if set
 
         $payload = [
             'apiId'        => $creds['api_id'],
@@ -86,15 +80,15 @@ class ProcessController extends Controller
         $headers = self::buildAuthHeaders($creds);
 
         Log::info(self::LOG_TAG . ' [1/INIT-REQUEST]', [
-            'environment'   => $creds['is_production'] ? 'PRODUCTION' : 'UAT',
-            'endpoint'      => $endpoint,
-            'proxied'       => $creds['is_proxied'],
-            'target_host'   => $creds['original_api_host'],
-            'trx'           => $deposit->trx,
-            'txnRef'        => $txnRef,
-            'deposit_id'    => $deposit->id,
-            'amount'        => $deposit->final_amount,
-            'payload'       => $payload,
+            'env'         => $creds['is_production'] ? 'PRODUCTION' : 'UAT',
+            'endpoint'    => $endpoint,
+            'proxied'     => $creds['is_proxied'],
+            'target_host' => $creds['original_api_host'],
+            'trx'         => $deposit->trx,
+            'txnRef'      => $txnRef,
+            'deposit_id'  => $deposit->id,
+            'amount'      => $deposit->final_amount,
+            'payload'     => $payload,
         ]);
 
         try {
@@ -129,15 +123,14 @@ class ProcessController extends Controller
                 return self::errorJson($result['message'] ?? 'Gateway error. Please try again.');
             }
 
-            $details = $result['details'] ?? [];
+            $details   = $result['details'] ?? [];
+            $intentUrl = $details['intent_url'] ?? '';
 
-            // Store txnReferance → used to match webhook and status check
+            // Store txnReferance so webhook + status poll can look it up
             $deposit->btc_wallet = $txnRef;
             $deposit->save();
 
-            $intentUrl = $details['intent_url'] ?? '';
-
-            Log::info(self::LOG_TAG . ' [3/INIT-SUCCESS-QR-GENERATED]', [
+            Log::info(self::LOG_TAG . ' [3/INIT-SUCCESS]', [
                 'trx'        => $deposit->trx,
                 'txnRef'     => $txnRef,
                 'UPIRefID'   => $details['UPIRefID'] ?? '',
@@ -149,18 +142,20 @@ class ProcessController extends Controller
                 return self::errorJson('No payment link returned by gateway.');
             }
 
-            $send['intent_url']    = $intentUrl;
-            $send['upi_ref_id']    = $details['UPIRefID']     ?? $txnRef;
-            $send['txn_reference'] = $details['txnReferance'] ?? $txnRef;
-            $send['payee_vpa']     = $details['payeeVPA']      ?? $creds['payee_vpa'];
-            $send['amount']        = $deposit->final_amount;
-            $send['currency']      = $deposit->method_currency;
-            $send['expiry_min']    = (int) $creds['expiry_time'];
-            $send['status_url']    = route('ipn.jio.status');
-            $send['trx']           = $deposit->trx;
-            $send['view']          = 'user.payment.jio';
-            $send['method']        = 'GET';
-            $send['url']           = route('ipn.jio');
+            $send = [
+                'intent_url'    => $intentUrl,
+                'upi_ref_id'    => $details['UPIRefID']      ?? $txnRef,
+                'txn_reference' => $details['txnReferance']  ?? $txnRef,
+                'payee_vpa'     => $details['payeeVPA']       ?? $creds['payee_vpa'],
+                'amount'        => $deposit->final_amount,
+                'currency'      => $deposit->method_currency,
+                'expiry_min'    => (int) $creds['expiry_time'],
+                'status_url'    => route('ipn.jio.status'),
+                'trx'           => $deposit->trx,
+                'view'          => 'user.payment.jio',
+                'method'        => 'GET',
+                'url'           => route('ipn.jio'),
+            ];
 
             return json_encode($send);
 
@@ -176,12 +171,8 @@ class ProcessController extends Controller
 
     // =========================================================================
     //  STEP 2 — Webhook / IPN Handler
-    //  SprintNXT POSTs to https://yourdomain.com/ipn/jio after each payment.
-    //
-    //  UAT:  plain JSON posted directly
-    //  LIVE: {"encdata":"<AES-256-CBC base64>"} — decrypted with same key/iv
-    //
-    //  Required response format: {"responseMessage":"Successful","returnCode":"0"}
+    //  POST https://yourdomain.com/ipn/jio
+    //  Required response: {"responseMessage":"Successful","returnCode":"0"}
     // =========================================================================
     public function ipn(Request $request)
     {
@@ -190,58 +181,26 @@ class ProcessController extends Controller
 
         Log::info(self::LOG_TAG . ' [4/WEBHOOK-RECEIVED]', [
             'ip'           => $request->ip(),
-            'method'       => $request->method(),
             'content_type' => $request->header('Content-Type'),
             'raw_body'     => $rawBody,
-            'parsed'       => $payload,
         ]);
 
-        // Decrypt if production encdata (matches Node decryptJioWebhook logic)
+        // Production sends {"encdata":"<AES-256-CBC base64>"}, UAT sends plain JSON
         if (isset($payload['encdata'])) {
-            Log::info(self::LOG_TAG . ' [4a/WEBHOOK-ENCRYPTED] Attempting decryption');
-
+            Log::info(self::LOG_TAG . ' [4a/WEBHOOK-ENCRYPTED]');
             $decrypted = $this->decryptWebhook($payload['encdata']);
             if ($decrypted === null) {
-                Log::error(self::LOG_TAG . ' [ERR/WEBHOOK-DECRYPT-FAIL]', [
-                    'encdata_length' => strlen($payload['encdata']),
-                ]);
-                // Return 200 — we don't want SprintNXT to keep retrying
+                Log::error(self::LOG_TAG . ' [ERR/WEBHOOK-DECRYPT-FAIL]');
                 return response()->json(['responseMessage' => 'Successful', 'returnCode' => '0']);
             }
-
             $payload = $decrypted;
             Log::info(self::LOG_TAG . ' [4b/WEBHOOK-DECRYPTED]', ['payload' => $payload]);
         }
 
-        /*
-         * Webhook payload structure (plain or after decryption):
-         * {
-         *   "event":    "upi",
-         *   "bank":     "JIO",
-         *   "response": {
-         *     "status":              1,        ← 1=Success, 4=Expired, 5=Failed, 6=Pending
-         *     "amount":              "799",    ← may be settlement amount (after fees)
-         *     "utr":                 "...",
-         *     "refid":               "TXNREF",
-         *     "ref_id":              "TXNREF",  ← alternate key (Node checks this too)
-         *     "upiRefId":            "TXNREF",
-         *     "txnid":               "...",
-         *     "receiver_vpa":        "...",
-         *     "remarks":             "SUCCESS",
-         *     "PayerVPA":            "user@upi",
-         *     "PayerName":           "...",
-         *     "TransactionDateTime": "..."
-         *   }
-         * }
-         */
         $response = $payload['response'] ?? $payload;
         $wStatus  = (int) ($response['status'] ?? 0);
-        $event    = $payload['event'] ?? 'unknown';
-        $bank     = $payload['bank']  ?? 'unknown';
 
         Log::info(self::LOG_TAG . ' [5/WEBHOOK-PARSED]', [
-            'event'    => $event,
-            'bank'     => $bank,
             'status'   => $wStatus,
             'refid'    => $response['refid']    ?? '',
             'ref_id'   => $response['ref_id']   ?? '',
@@ -250,7 +209,7 @@ class ProcessController extends Controller
             'utr'      => $response['utr']       ?? '',
         ]);
 
-        // Prioritise refid → ref_id → upiRefId (matches Node callback logic exactly)
+        // Matches Node: refid → ref_id → upiRefId
         $txnRef = $response['refid'] ?? $response['ref_id'] ?? $response['upiRefId'] ?? null;
 
         if (!$txnRef) {
@@ -261,38 +220,26 @@ class ProcessController extends Controller
         $deposit = Deposit::where('btc_wallet', $txnRef)->orderBy('id', 'DESC')->first();
 
         if (!$deposit) {
-            Log::warning(self::LOG_TAG . ' [WARN/WEBHOOK-DEPOSIT-NOT-FOUND]', [
-                'txnRef'      => $txnRef,
-                'searched_in' => 'deposits.btc_wallet',
-            ]);
+            Log::warning(self::LOG_TAG . ' [WARN/WEBHOOK-DEPOSIT-NOT-FOUND]', ['txnRef' => $txnRef]);
             return response()->json(['responseMessage' => 'Successful', 'returnCode' => '0']);
         }
 
-        Log::info(self::LOG_TAG . ' [6/WEBHOOK-DEPOSIT-FOUND]', [
-            'deposit_id'     => $deposit->id,
-            'deposit_status' => $deposit->status,
-            'txnRef'         => $txnRef,
-        ]);
-
-        // Already processed — skip (matches Node "payin.status === SUCCESS" guard)
+        // Already SUCCESS — skip
         if ($deposit->status == Status::PAYMENT_SUCCESS) {
-            Log::info(self::LOG_TAG . ' [7a/WEBHOOK-ALREADY-SUCCESS]', ['deposit_id' => $deposit->id]);
+            Log::info(self::LOG_TAG . ' [WEBHOOK-ALREADY-SUCCESS]', ['deposit_id' => $deposit->id]);
             return response()->json(['responseMessage' => 'Successful', 'returnCode' => '0']);
         }
 
         if ($wStatus === 1) {
-            // Success callback — verify amount then confirm
-            // Node prioritises payer_amount; response.amount may be post-fee settlement amount
-            $paidAmount    = (float) ($response['payer_amount'] ?? $response['amount'] ?? 0);
+            // Node uses payer_amount first — response.amount may be post-fee settlement
+            $paidAmount     = (float) ($response['payer_amount'] ?? $response['amount'] ?? 0);
             $expectedAmount = (float) $deposit->final_amount;
-            $amountMatched = self::matchAmount($expectedAmount, $paidAmount);
+            $amountMatched  = self::matchAmount($expectedAmount, $paidAmount);
 
-            Log::info(self::LOG_TAG . ' [6a/WEBHOOK-AMOUNT-CHECK]', [
-                'expected'      => $expectedAmount,
-                'received'      => $paidAmount,
-                'matched'       => $amountMatched,
-                'payer_amount'  => $response['payer_amount'] ?? 'N/A',
-                'amount_field'  => $response['amount']       ?? 'N/A',
+            Log::info(self::LOG_TAG . ' [6/WEBHOOK-AMOUNT-CHECK]', [
+                'expected'     => $expectedAmount,
+                'received'     => $paidAmount,
+                'matched'      => $amountMatched,
             ]);
 
             if ($amountMatched && $deposit->status == Status::PAYMENT_INITIATE) {
@@ -300,50 +247,35 @@ class ProcessController extends Controller
                 $deposit->save();
                 PaymentController::userDataUpdate($deposit);
 
-                Log::info(self::LOG_TAG . ' [7/WEBHOOK-PAYMENT-CONFIRMED]', [
+                Log::info(self::LOG_TAG . ' [7/WEBHOOK-CONFIRMED]', [
                     'deposit_id' => $deposit->id,
                     'trx'        => $deposit->trx,
-                    'amount'     => $deposit->final_amount,
                     'utr'        => $response['utr']      ?? 'N/A',
                     'payer_vpa'  => $response['PayerVPA'] ?? 'N/A',
                 ]);
-            } else if (!$amountMatched) {
+            } elseif (!$amountMatched) {
                 Log::error(self::LOG_TAG . ' [ERR/WEBHOOK-AMOUNT-MISMATCH]', [
                     'deposit_id' => $deposit->id,
                     'expected'   => $expectedAmount,
                     'received'   => $paidAmount,
                 ]);
-                // Do NOT confirm — amount mismatch. Log it, alert manually if needed.
             } else {
-                Log::info(self::LOG_TAG . ' [7b/WEBHOOK-ALREADY-PROCESSED]', [
-                    'deposit_id'    => $deposit->id,
-                    'current_status'=> $deposit->status,
-                ]);
+                Log::info(self::LOG_TAG . ' [WEBHOOK-ALREADY-PROCESSED]', ['deposit_id' => $deposit->id]);
             }
 
         } elseif ($wStatus === 4 || $wStatus === 5) {
-            // Terminal failure — log it (PHP framework may not have explicit FAILED status update)
-            Log::info(self::LOG_TAG . ' [7c/WEBHOOK-TERMINAL-FAIL]', [
+            Log::info(self::LOG_TAG . ' [WEBHOOK-TERMINAL-FAIL]', [
                 'deposit_id' => $deposit->id,
                 'wStatus'    => $wStatus,
-                'meaning'    => self::webhookStatusMeaning($wStatus),
-            ]);
-        } else {
-            // Status 2/3/6 — pending/initiated, no update needed
-            Log::info(self::LOG_TAG . ' [7d/WEBHOOK-PENDING-STATUS]', [
-                'deposit_id' => $deposit->id,
-                'wStatus'    => $wStatus,
-                'meaning'    => self::webhookStatusMeaning($wStatus),
             ]);
         }
+        // Status 2/3/6 — pending, no action
 
-        // SprintNXT REQUIRES exactly this response — any other format causes retries
         return response()->json(['responseMessage' => 'Successful', 'returnCode' => '0']);
     }
 
     // =========================================================================
-    //  STEP 3 — AJAX Status Polling
-    //  Payment page calls this every 5 seconds via GET /ipn/jio/status?trx=...
+    //  STEP 3 — AJAX Status Polling  (GET /ipn/jio/status?trx=...)
     // =========================================================================
     public function checkStatus(Request $request)
     {
@@ -357,9 +289,7 @@ class ProcessController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Not found']);
         }
 
-        // Already confirmed by webhook
         if ($deposit->status == Status::PAYMENT_SUCCESS) {
-            Log::info(self::LOG_TAG . ' [POLL/ALREADY-SUCCESS]', ['trx' => $trx]);
             return response()->json([
                 'status'   => 'success',
                 'redirect' => route('checkout.confirmation', $deposit->order->order_number),
@@ -371,18 +301,19 @@ class ProcessController extends Controller
         }
 
         try {
-            $creds = self::resolveCredentials($deposit->gatewayCurrency()->gateway_parameter);
+            $raw   = self::extractRawJson($deposit->gatewayCurrency());
+            $creds = self::resolveCredentials($raw);
         } catch (\Exception $e) {
-            Log::error(self::LOG_TAG . ' [ERR/POLL-CRED-MISSING]', ['msg' => $e->getMessage()]);
+            Log::error(self::LOG_TAG . ' [ERR/POLL-CRED]', ['msg' => $e->getMessage()]);
             return response()->json(['status' => 'pending']);
         }
 
-        $endpoint = self::rewriteUrl($creds['payin_status_url'], $creds['proxy_url']);
+        $endpoint = $creds['payin_status_url'];
 
         $statusPayload = [
-            'apiId'  => $creds['api_id_status'],      // Always api_id_status (e.g. 20247) for status check
+            'apiId'  => $creds['api_id_status'],
             'bankId' => $creds['bank_id'],
-            'txnId'  => $deposit->btc_wallet,          // txnReferance sent at init
+            'txnId'  => $deposit->btc_wallet,
         ];
 
         $headers = self::buildAuthHeaders($creds);
@@ -399,66 +330,28 @@ class ProcessController extends Controller
             $response = Http::timeout(15)->withHeaders($headers)->post($endpoint, $statusPayload);
             $result   = $response->json();
 
-            Log::info(self::LOG_TAG . ' [POLL/STATUS-RESPONSE]', [
-                'trx'    => $trx,
-                'result' => $result,
-            ]);
+            Log::info(self::LOG_TAG . ' [POLL/STATUS-RESPONSE]', ['trx' => $trx, 'result' => $result]);
 
-            // API-level failure — keep polling, don't fail the user
             $gatewayOk = $result['status'] ?? false;
             if ($gatewayOk !== true && $gatewayOk !== 1) {
                 Log::warning(self::LOG_TAG . ' [POLL/API-ERROR]', ['trx' => $trx, 'result' => $result]);
                 return response()->json(['status' => 'pending']);
             }
 
-            /*
-             * Node logic: body.data can be an ARRAY — find the best record.
-             * Priority 1: any Success record
-             * Priority 2: any Pending/Initiated record
-             * Priority 3: last record (fallback)
-             *
-             * statusvalue: 1=Success 2=Initiated 3=QRGenerated 4=Expired 5=Failed 6=Pending
-             */
+            // Node priority selection when data is an array
             $dataRaw = $result['data'] ?? null;
-            $data    = null;
-
-            if (is_array($dataRaw) && isset($dataRaw[0])) {
-                // It's a list — apply Node priority selection
-                foreach ($dataRaw as $item) {
-                    $s = strtolower((string) ($item['status'] ?? $item['statusvalue'] ?? ''));
-                    if ($s === 'success' || $s === '1') {
-                        $data = $item;
-                        break;
-                    }
-                }
-                if (!$data) {
-                    $pendingCodes = ['2', '3', '6', 'initiated', 'qr_generated', 'qrgenerated', 'pending'];
-                    foreach ($dataRaw as $item) {
-                        $s = strtolower((string) ($item['status'] ?? $item['statusvalue'] ?? ''));
-                        if (in_array($s, $pendingCodes)) {
-                            $data = $item;
-                            break;
-                        }
-                    }
-                }
-                if (!$data && count($dataRaw) > 0) {
-                    $data = $dataRaw[count($dataRaw) - 1];
-                }
-            } else {
-                // Single object
-                $data = $dataRaw;
-            }
+            $data    = self::pickBestStatusRecord($dataRaw);
 
             if (!$data) {
                 return response()->json(['status' => 'pending']);
             }
 
-            $statusVal  = strtolower((string) ($data['status'] ?? $data['statusvalue'] ?? ''));
-            $isSuccess  = ($statusVal === 'success' || $statusVal === '1');
-            $isFailed   = in_array($statusVal, ['failed', 'qr_expired', '4', '5']);
+            $statusVal = strtolower((string) ($data['status'] ?? $data['statusvalue'] ?? ''));
+            $isSuccess = ($statusVal === 'success' || $statusVal === '1');
+            $isFailed  = in_array($statusVal, ['failed', 'qr_expired', '4', '5']);
 
             if ($isSuccess && $deposit->status == Status::PAYMENT_INITIATE) {
-                // Node uses payer_amount to correctly match original amount (not settlement amount)
+                // Node uses payer_amount (not amount which may be post-fee)
                 $paidAmount     = (float) ($data['payer_amount'] ?? 0);
                 $expectedAmount = (float) $deposit->final_amount;
                 $amountMatched  = self::matchAmount($expectedAmount, $paidAmount);
@@ -466,9 +359,7 @@ class ProcessController extends Controller
                 Log::info(self::LOG_TAG . ' [POLL/AMOUNT-CHECK]', [
                     'trx'          => $trx,
                     'expected'     => $expectedAmount,
-                    'received'     => $paidAmount,
-                    'payer_amount' => $data['payer_amount'] ?? 'N/A',
-                    'amount_field' => $data['amount']       ?? 'N/A',
+                    'payer_amount' => $paidAmount,
                     'matched'      => $amountMatched,
                 ]);
 
@@ -477,11 +368,10 @@ class ProcessController extends Controller
                     $deposit->save();
                     PaymentController::userDataUpdate($deposit);
 
-                    Log::info(self::LOG_TAG . ' [POLL/PAYMENT-CONFIRMED]', [
-                        'trx'        => $trx,
-                        'deposit_id' => $deposit->id,
-                        'rrn'        => $data['rrn_number'] ?? 'N/A',
-                        'payer_vpa'  => $data['payer_vpa']  ?? 'N/A',
+                    Log::info(self::LOG_TAG . ' [POLL/CONFIRMED]', [
+                        'trx'       => $trx,
+                        'rrn'       => $data['rrn_number'] ?? 'N/A',
+                        'payer_vpa' => $data['payer_vpa']  ?? 'N/A',
                     ]);
 
                     return response()->json([
@@ -501,19 +391,13 @@ class ProcessController extends Controller
                 }
             }
 
-            // Terminal failure — stop polling
             if ($isFailed) {
-                Log::info(self::LOG_TAG . ' [POLL/TERMINAL-FAIL]', [
-                    'trx'        => $trx,
-                    'statusvalue'=> $statusVal,
-                ]);
                 return response()->json([
                     'status'  => 'failed',
                     'message' => 'Payment failed or QR expired. Please go back and try again.',
                 ]);
             }
 
-            // 2=Initiated, 3=QRGenerated, 6=Pending — keep polling
             return response()->json(['status' => 'pending']);
 
         } catch (\Exception $e) {
@@ -530,68 +414,127 @@ class ProcessController extends Controller
     // =========================================================================
 
     /**
-     * Resolve and validate credentials from gateway_parameter JSON string.
-     * Mirrors Node resolveJioCredentialsSync() exactly.
+     * Safely extract the gateway_parameter JSON string from a gateway currency model.
      *
-     * @throws \Exception if required fields are missing
+     * ViserMart uses two column name variants depending on the module:
+     *   gateway_currencies.gateway_parameter   (e-commerce / ViserMart)
+     *   gateway_currencies.gateway_parameters  (some forks)
+     *
+     * This method tries both and also handles the case where Laravel has
+     * already decoded the JSON into an array/object (json cast on the model).
+     */
+    private static function extractRawJson($gatewayCurrency): string
+    {
+        // Try both column name variants
+        $raw = $gatewayCurrency->gateway_parameter
+            ?? $gatewayCurrency->gateway_parameters
+            ?? null;
+
+        if ($raw === null) {
+            // Log all available attributes to help diagnose column name issues
+            Log::error(self::LOG_TAG . ' [ERR/CRED-COLUMN-NOT-FOUND]', [
+                'available_keys' => array_keys($gatewayCurrency->getAttributes()),
+            ]);
+            throw new \Exception('Could not find gateway credential column. Check laravel.log for available keys.');
+        }
+
+        // If Laravel cast it to array/object already, re-encode to string
+        if (is_array($raw) || is_object($raw)) {
+            return json_encode($raw);
+        }
+
+        return (string) $raw;
+    }
+
+    /**
+     * Resolve and validate credentials from gateway_parameter JSON.
+     * Mirrors Node resolveJioCredentialsSync() exactly.
+     * Supports both snake_case (DB) and camelCase keys.
+     *
+     * @throws \Exception on missing required fields
      */
     private static function resolveCredentials(string $rawJson): array
     {
-        $r = json_decode($rawJson, true) ?? [];
+        $r = json_decode($rawJson, true);
+
+        if (!is_array($r)) {
+            Log::error(self::LOG_TAG . ' [ERR/CRED-JSON-DECODE-FAIL]', [
+                'raw_preview' => substr($rawJson, 0, 200),
+            ]);
+            throw new \Exception('JIO gateway_parameter is not valid JSON.');
+        }
 
         $clientId      = (string) ($r['client_id']      ?? $r['clientId']      ?? '');
         $clientSecret  = (string) ($r['client_secret']  ?? $r['clientSecret']  ?? '');
         $encryptionKey = (string) ($r['encryption_key'] ?? $r['encryptionKey'] ?? '');
         $encryptionIv  = (string) ($r['encryption_iv']  ?? $r['encryptionIv']  ?? '');
 
+        // Log what we found (mask secrets) to aid debugging
+        Log::info(self::LOG_TAG . ' [CRED-RESOLVED]', [
+            'client_id'       => $clientId ? substr($clientId, 0, 8) . '...' : 'MISSING',
+            'client_secret'   => $clientSecret  ? '***set***' : 'MISSING',
+            'encryption_key'  => $encryptionKey ? '***set***' : 'MISSING',
+            'encryption_iv'   => $encryptionIv  ? '***set***' : 'MISSING',
+            'payin_init_url'  => $r['payin_init_url']   ?? $r['payinInitUrl']   ?? 'MISSING',
+            'proxy_url'       => $r['proxy_url']         ?? $r['proxyUrl']       ?? 'none',
+        ]);
+
         if (!$clientId || !$clientSecret || !$encryptionKey || !$encryptionIv) {
-            throw new \Exception('Missing JIO credentials: clientId, clientSecret, encryptionKey, encryptionIv are all required.');
+            throw new \Exception(
+                'Missing JIO credentials: ' . implode(', ', array_filter([
+                    !$clientId      ? 'client_id'      : null,
+                    !$clientSecret  ? 'client_secret'  : null,
+                    !$encryptionKey ? 'encryption_key' : null,
+                    !$encryptionIv  ? 'encryption_iv'  : null,
+                ])) . ' are required.'
+            );
         }
 
         $rawPayinInitUrl   = (string) ($r['payin_init_url']   ?? $r['payinInitUrl']   ?? '');
         $rawPayinStatusUrl = (string) ($r['payin_status_url'] ?? $r['payinStatusUrl'] ?? '');
+        $proxyUrl          = rtrim((string) ($r['proxy_url'] ?? $r['proxyUrl'] ?? ''), '/');
+        $isProxied         = !empty($proxyUrl);
 
-        $proxyUrl = rtrim((string) ($r['proxy_url'] ?? $r['proxyUrl'] ?? ''), '/');
-        $isProxied = !empty($proxyUrl);
-
-        // Determine the real upstream host for the X-PG-Target-Host header
+        // Real upstream host for X-PG-Target-Host header (Nginx needs this)
         $originalApiHost = '';
         if ($isProxied) {
             $originalApiHost = self::extractHost($rawPayinInitUrl)
                             ?: self::extractHost($rawPayinStatusUrl);
         }
 
-        $isProduction = filter_var($r['is_production'] ?? $r['isProduction'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $isProduction = filter_var(
+            $r['is_production'] ?? $r['isProduction'] ?? false,
+            FILTER_VALIDATE_BOOLEAN
+        );
 
         return [
-            'client_id'          => $clientId,
-            'client_secret'      => $clientSecret,
-            'api_id'             => (string) ($r['api_id']        ?? $r['apiId']        ?? '20260'),
-            'api_id_status'      => (string) ($r['api_id_status'] ?? $r['apiIdStatus']  ?? '20247'),
-            'bank_id'            => (string) ($r['bank_id']       ?? $r['bankId']       ?? '12'),
-            'payee_vpa'          => (string) ($r['payee_vpa']     ?? $r['payeeVpa']     ?? ''),
-            'expiry_time'        => (string) ($r['expiry_time']   ?? $r['expiryTime']   ?? '10'),
-            'is_production'      => $isProduction,
-            'encryption_key'     => $encryptionKey,
-            'encryption_iv'      => $encryptionIv,
-            // URLs are rewritten to go through proxy if proxy_url is configured
-            'payin_init_url'     => self::rewriteUrl($rawPayinInitUrl,   $proxyUrl),
-            'payin_status_url'   => self::rewriteUrl($rawPayinStatusUrl, $proxyUrl),
-            'proxy_url'          => $proxyUrl,
-            'is_proxied'         => $isProxied,
-            'original_api_host'  => $originalApiHost,
+            'client_id'         => $clientId,
+            'client_secret'     => $clientSecret,
+            'api_id'            => (string) ($r['api_id']        ?? $r['apiId']        ?? '20260'),
+            'api_id_status'     => (string) ($r['api_id_status'] ?? $r['apiIdStatus']  ?? '20247'),
+            'bank_id'           => (string) ($r['bank_id']       ?? $r['bankId']       ?? '12'),
+            'payee_vpa'         => (string) ($r['payee_vpa']     ?? $r['payeeVpa']     ?? ''),
+            'expiry_time'       => (string) ($r['expiry_time']   ?? $r['expiryTime']   ?? '10'),
+            'is_production'     => $isProduction,
+            'encryption_key'    => $encryptionKey,
+            'encryption_iv'     => $encryptionIv,
+            // URLs already rewritten through proxy (path preserved, host swapped)
+            'payin_init_url'    => self::rewriteUrl($rawPayinInitUrl,   $proxyUrl),
+            'payin_status_url'  => self::rewriteUrl($rawPayinStatusUrl, $proxyUrl),
+            'proxy_url'         => $proxyUrl,
+            'is_proxied'        => $isProxied,
+            'original_api_host' => $originalApiHost,
         ];
     }
 
     /**
-     * Rewrites a URL's origin (scheme + host) to route through the proxy.
-     * Path and query string are preserved exactly.
+     * Rewrite a URL's origin through the proxy, keeping path+query intact.
      * Mirrors Node rewriteUrlThroughProxy().
      *
      * Example:
-     *   rewriteUrl('https://nxt.sprintnxt.in/PayInExposeNxt/api/v2/UPIService/UPI',
+     *   rewriteUrl('https://api.sprintnxt.in/api/v2/UPIService/UPI',
      *              'https://checkout.novafin.tech')
-     *   → 'https://checkout.novafin.tech/PayInExposeNxt/api/v2/UPIService/UPI'
+     *   → 'https://checkout.novafin.tech/api/v2/UPIService/UPI'
      */
     private static function rewriteUrl(string $originalUrl, string $proxyBase): string
     {
@@ -599,59 +542,50 @@ class ProcessController extends Controller
             return $originalUrl;
         }
 
-        $parsedOriginal = parse_url($originalUrl);
-        $parsedProxy    = parse_url($proxyBase);
+        $orig  = parse_url($originalUrl);
+        $proxy = parse_url($proxyBase);
 
-        if (!$parsedOriginal || !$parsedProxy) {
-            return $originalUrl; // Parse failed — return as-is
+        if (!$orig || !$proxy) {
+            return $originalUrl;
         }
 
-        $scheme = $parsedProxy['scheme'] ?? $parsedOriginal['scheme'] ?? 'https';
-        $host   = $parsedProxy['host']   ?? $parsedOriginal['host']   ?? '';
-        $port   = isset($parsedProxy['port']) ? ':' . $parsedProxy['port'] : '';
-        $path   = $parsedOriginal['path']  ?? '';
-        $query  = isset($parsedOriginal['query']) ? '?' . $parsedOriginal['query'] : '';
+        $scheme = $proxy['scheme']   ?? $orig['scheme'] ?? 'https';
+        $host   = $proxy['host']     ?? $orig['host']   ?? '';
+        $port   = isset($proxy['port']) ? ':' . $proxy['port'] : '';
+        $path   = $orig['path']      ?? '';
+        $query  = isset($orig['query']) ? '?' . $orig['query'] : '';
 
         return rtrim($scheme . '://' . $host . $port . $path . $query, '/');
     }
 
     /**
-     * Extracts the host from a URL.
+     * Extract host (with port if non-standard) from a URL.
      * Mirrors Node extractHost().
      */
     private static function extractHost(string $url): string
     {
         if (empty($url)) return '';
-        $parsed = parse_url($url);
-        if (!$parsed) return '';
-        $host = $parsed['host'] ?? '';
-        if (isset($parsed['port'])) {
-            $host .= ':' . $parsed['port'];
-        }
-        return $host;
+        $p = parse_url($url);
+        if (!$p || empty($p['host'])) return '';
+        return $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
     }
 
     /**
-     * Build auth headers — matches Node jioAuthHeaders() exactly.
+     * Build auth headers — mirrors Node jioAuthHeaders() exactly.
      *
-     * Client-id = base64_encode(clientId)
-     * Token      = AES-256-CBC encrypt(JSON payload, encryptionKey, encryptionIv) → base64
-     *
-     * When proxied, adds X-PG-Target-Host so Nginx knows which upstream to forward to.
+     * Client-id = base64_encode(clientId)          ← Node: Buffer.from(clientId).toString('base64')
+     * Token      = generateToken() → AES encrypted  ← Node: generateJioToken()
+     * X-PG-Target-Host added only when proxied      ← tells Nginx upstream host
      */
     private static function buildAuthHeaders(array $creds): array
     {
-        $clientIdEncoded = base64_encode($creds['client_id']);
-        $token           = self::generateToken($creds);
-
         $headers = [
-            'Client-id'    => $clientIdEncoded,
-            'Token'        => $token,
+            'Client-id'    => base64_encode($creds['client_id']),
+            'Token'        => self::generateToken($creds),
             'accept'       => 'application/json',
             'content-type' => 'application/json',
         ];
 
-        // When proxy is active, tell Nginx which upstream host to forward to
         if ($creds['is_proxied'] && !empty($creds['original_api_host'])) {
             $headers['X-PG-Target-Host'] = $creds['original_api_host'];
         }
@@ -660,21 +594,21 @@ class ProcessController extends Controller
     }
 
     /**
-     * Generate dynamic Token — mirrors Node generateJioToken() exactly.
+     * Generate dynamic Token per request.
+     * Mirrors Node generateJioToken() exactly.
      *
-     * payload = JSON {
-     *   client_secret: "...",
-     *   requestid:     "9-digit padded random",   ← crypto.randomBytes(5).readUInt32BE(0)
-     *   timestamp:     "unix_epoch_seconds"
-     * }
-     * token = AES-256-CBC encrypt(JSON(payload), key, iv) → base64
+     * PHP equivalent of:
+     *   crypto.randomBytes(5).readUInt32BE(0).toString().padStart(9, '1')
+     *
+     * payload = JSON { client_secret, requestid, timestamp }
+     * token   = AES-256-CBC encrypt(JSON, key, iv) → base64
      */
     private static function generateToken(array $creds): string
     {
-        // PHP equivalent of crypto.randomBytes(5).readUInt32BE(0).toString().padStart(9,'1')
-        $randomBytes = random_bytes(5);
-        $uint32      = unpack('N', substr($randomBytes, 0, 4))[1]; // big-endian uint32
-        $requestId   = str_pad((string) $uint32, 9, '1', STR_PAD_LEFT);
+        // Read first 4 bytes of 5 random bytes as big-endian uint32 → matches Node readUInt32BE(0)
+        $bytes    = random_bytes(5);
+        $uint32   = unpack('N', substr($bytes, 0, 4))[1];
+        $requestId = str_pad((string) $uint32, 9, '1', STR_PAD_LEFT);
 
         $payload = json_encode([
             'client_secret' => $creds['client_secret'],
@@ -686,17 +620,15 @@ class ProcessController extends Controller
     }
 
     /**
-     * AES-256-CBC encryption — mirrors Node encryptJioPayload().
-     *
-     * Key: padded/truncated to 32 bytes (Node: Buffer.alloc(32) then copy)
-     * IV:  padded/truncated to 16 bytes (Node: Buffer.alloc(16) then copy)
-     * Output: base64
+     * AES-256-CBC encrypt → base64.
+     * Mirrors Node encryptJioPayload():
+     *   keyBuf = Buffer.alloc(32); Buffer.from(key,'utf8').copy(keyBuf)  → pad/truncate to 32
+     *   ivBuf  = Buffer.alloc(16); Buffer.from(iv, 'utf8').copy(ivBuf)   → pad/truncate to 16
      */
     private static function encryptAes(string $plainText, string $key, string $iv): string
     {
-        // Pad or truncate to exact sizes — mirrors Node Buffer.alloc() + copy()
-        $keyBuf = str_pad(substr($key, 0, 32), 32, "\0");
-        $ivBuf  = str_pad(substr($iv,  0, 16), 16, "\0");
+        $keyBuf = str_pad(substr($key, 0, 32), 32, "\0"); // exactly 32 bytes
+        $ivBuf  = str_pad(substr($iv,  0, 16), 16, "\0"); // exactly 16 bytes
 
         $encrypted = openssl_encrypt($plainText, 'AES-256-CBC', $keyBuf, OPENSSL_RAW_DATA, $ivBuf);
 
@@ -704,29 +636,34 @@ class ProcessController extends Controller
     }
 
     /**
-     * Decrypt AES-256-CBC webhook payload — mirrors Node decryptJioWebhook().
-     * Falls back to plain base64 decode when key/iv not available.
-     *
-     * @return array|null  Decoded payload, or null on failure
+     * Decrypt AES-256-CBC webhook encdata.
+     * Mirrors Node decryptJioWebhook().
+     * Falls back to raw base64 decode when no keys are configured.
      */
     private function decryptWebhook(string $encdata): ?array
     {
         try {
-            // Try to get creds from the JIO gateway record in DB
-            $gateway = \App\Models\Gateway::where('alias', 'jio')->first();
-
             $key = null;
             $iv  = null;
 
+            // Try to pull keys from the Gateway model (alias = 'jio')
+            $gateway = \App\Models\Gateway::where('alias', 'jio')->first();
             if ($gateway) {
-                $params = json_decode($gateway->gateway_parameters, true);
-                $key    = $params['encryption_key'] ?? null;
-                $iv     = $params['encryption_iv']  ?? null;
+                // Handle both column name variants
+                $paramJson = $gateway->gateway_parameters
+                          ?? $gateway->gateway_parameter
+                          ?? null;
+
+                $params = is_array($paramJson)
+                    ? $paramJson
+                    : json_decode((string) $paramJson, true);
+
+                $key = $params['encryption_key'] ?? null;
+                $iv  = $params['encryption_iv']  ?? null;
             }
 
             if (empty($key) || empty($iv)) {
-                // No keys — attempt plain base64 decode fallback (Node does this too)
-                Log::warning(self::LOG_TAG . ' [WARN/DECRYPT-NO-KEYS] Attempting base64 fallback');
+                Log::warning(self::LOG_TAG . ' [WARN/DECRYPT-NO-KEYS] base64 fallback');
                 $decoded = base64_decode($encdata, true);
                 return $decoded ? json_decode($decoded, true) : null;
             }
@@ -737,10 +674,10 @@ class ProcessController extends Controller
                 return null;
             }
 
-            $keyBuf = str_pad(substr($key, 0, 32), 32, "\0");
-            $ivBuf  = str_pad(substr($iv,  0, 16), 16, "\0");
-
+            $keyBuf    = str_pad(substr($key, 0, 32), 32, "\0");
+            $ivBuf     = str_pad(substr($iv,  0, 16), 16, "\0");
             $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $keyBuf, OPENSSL_RAW_DATA, $ivBuf);
+
             if ($decrypted === false) {
                 Log::error(self::LOG_TAG . ' [ERR/DECRYPT-OPENSSL-FAIL]');
                 return null;
@@ -755,55 +692,72 @@ class ProcessController extends Controller
     }
 
     /**
-     * Validate txnReferance: alphanumeric, 10–30 characters.
-     * Mirrors Node generateJioTxnRef().
+     * Node priority selection when status API returns data as an array.
+     *
+     * Priority 1: any Success record
+     * Priority 2: any Pending/Initiated record
+     * Priority 3: last record (fallback)
+     */
+    private static function pickBestStatusRecord($dataRaw): ?array
+    {
+        if (!$dataRaw) return null;
+
+        // Single object — return as-is
+        if (is_array($dataRaw) && !isset($dataRaw[0])) {
+            return $dataRaw;
+        }
+
+        if (!is_array($dataRaw) || count($dataRaw) === 0) {
+            return null;
+        }
+
+        // Priority 1: Success
+        foreach ($dataRaw as $item) {
+            $s = strtolower((string) ($item['status'] ?? $item['statusvalue'] ?? ''));
+            if ($s === 'success' || $s === '1') return $item;
+        }
+
+        // Priority 2: Pending/Initiated
+        $pendingCodes = ['2', '3', '6', 'initiated', 'qr_generated', 'qrgenerated', 'pending'];
+        foreach ($dataRaw as $item) {
+            $s = strtolower((string) ($item['status'] ?? $item['statusvalue'] ?? ''));
+            if (in_array($s, $pendingCodes)) return $item;
+        }
+
+        // Priority 3: Last item
+        return $dataRaw[count($dataRaw) - 1];
+    }
+
+    /**
+     * txnReferance: alphanumeric, 10–30 chars. Mirrors Node generateJioTxnRef().
      */
     private static function makeTxnRef(string $trx): string
     {
         $clean = preg_replace('/[^A-Za-z0-9]/', '', $trx);
         $clean = substr($clean, 0, 30);
-        if (strlen($clean) < 10) {
-            $clean = str_pad($clean, 10, '0');
-        }
-        return $clean;
+        return strlen($clean) < 10 ? str_pad($clean, 10, '0') : $clean;
     }
 
     /**
-     * Generate a valid Indian mobile number for the 'mobile' field.
-     * Mirrors Node safeMobile() — if input is invalid/missing, returns a random valid number.
+     * Safe Indian mobile number. Mirrors Node safeMobile().
      */
     private static function safeMobile(?string $mobile): string
     {
         if ($mobile && preg_match('/^[6-9]\d{9}$/', $mobile)) {
             return $mobile;
         }
-        $prefixes = ['6', '7', '8', '9'];
-        $prefix   = $prefixes[array_rand($prefixes)];
+        $prefix = ['6', '7', '8', '9'][array_rand(['6', '7', '8', '9'])];
         return $prefix . str_pad((string) mt_rand(0, 999999999), 9, '1', STR_PAD_LEFT);
     }
 
     /**
-     * Amount matching with 1-rupee tolerance.
-     * Mirrors Node CommonHelper.matchAmount() behaviour.
-     * Adjust tolerance as needed for your platform.
+     * Amount match with ₹1 tolerance.
+     * Mirrors Node CommonHelper.matchAmount() typical behaviour.
      */
     private static function matchAmount(float $expected, float $received): bool
     {
         if ($received <= 0) return false;
         return abs($expected - $received) <= 1.0;
-    }
-
-    private static function webhookStatusMeaning(int $status): string
-    {
-        return match($status) {
-            1  => 'Success',
-            2  => 'Initiated',
-            3  => 'QR Generated',
-            4  => 'QR Expired',
-            5  => 'Failed',
-            6  => 'Pending/Timeout',
-            default => 'Unknown (' . $status . ')',
-        };
     }
 
     private static function errorJson(string $message): string

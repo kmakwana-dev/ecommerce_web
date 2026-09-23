@@ -23,6 +23,11 @@ class PaymentController extends Controller {
             return  to_route('deposit.manual.confirm');
         }
 
+        // COD deposit — no gateway record exists for method_code = 0
+        if ($deposit->method_code == 0) {
+            return redirect()->route('checkout.confirmation', $deposit->order->order_number);
+        }
+
         $dirName = ucfirst($deposit->gateway->alias);
         $new = __NAMESPACE__ . '\\' . $dirName . '\\ProcessController';
 

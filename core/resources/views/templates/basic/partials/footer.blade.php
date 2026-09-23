@@ -79,9 +79,9 @@
             <div class="d-flex flex-wrap justify-content-center align-items-center gap-2" style="font-size: 12px; color: rgba(255,255,255,0.55); letter-spacing: 0.3px;">
                 <span><strong style="color:rgba(255,255,255,0.75)">GSTIN:</strong> 10AAECW1795M1Z2</span>
                 <span style="color:rgba(255,255,255,0.25)">|</span>
-                <span><strong style="color:rgba(255,255,255,0.75)">PAN:</strong> AAECW1795M</span>
+                <span><strong style="color:rgba(255,255,255,0.75)">PAN:</strong> AAMCV2529A</span>
                 <span style="color:rgba(255,255,255,0.25)">|</span>
-                <span><strong style="color:rgba(255,255,255,0.75)">CIN:</strong> U62099BR2025PTC077443</span>
+                <span><strong style="color:rgba(255,255,255,0.75)">CIN:</strong> U47912MR2026PTC476811</span>
             </div>
         </div>
 

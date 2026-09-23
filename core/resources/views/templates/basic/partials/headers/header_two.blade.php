@@ -101,4 +101,15 @@
     </div>
 @endif
 
+@push('style')
+    <style>
+        @media (min-width: 992px) {
+           .header-wrapper .logo img  {
+                width: 85% !important;
+            }
+        }
+    </style>
+@endpush
+
+
 

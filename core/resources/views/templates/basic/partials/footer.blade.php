@@ -77,11 +77,11 @@
         {{-- Legal Compliance Bar --}}
         <div class="footer-legal-bar" style="border-top: 1px solid rgba(255,255,255,0.08); padding: 10px 0; margin-top: 4px;">
             <div class="d-flex flex-wrap justify-content-center align-items-center gap-2" style="font-size: 12px; color: rgba(255,255,255,0.55); letter-spacing: 0.3px;">
-                <span><strong style="color:rgba(255,255,255,0.75)">GSTIN:</strong> 10AAECW1795M1Z2</span>
+                <span><strong style="color:rgba(255,255,255,0.75)">GSTIN:</strong> 19AAECW4056D1ZB</span>
                 <span style="color:rgba(255,255,255,0.25)">|</span>
-                <span><strong style="color:rgba(255,255,255,0.75)">PAN:</strong> AAMCV2529A</span>
+                <span><strong style="color:rgba(255,255,255,0.75)">PAN:</strong> AAECW4056D</span>
                 <span style="color:rgba(255,255,255,0.25)">|</span>
-                <span><strong style="color:rgba(255,255,255,0.75)">CIN:</strong> U47912MR2026PTC476811</span>
+                <span><strong style="color:rgba(255,255,255,0.75)">CIN:</strong> U46410WB2026PTC392620</span>
             </div>
         </div>
 

@@ -2960,22 +2960,44 @@ button.owl-next.disabled {
   }
 }
 
-.description-item {
-  word-break: break-all;
+.product-description-content {
+  padding: 8px 4px 4px;
+  max-width: 920px;
 }
 
-.description-item .title {
+.description-item {
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: 1.7;
+  color: hsl(var(--body-color));
+}
+
+.description-item .title,
+.description-item h4,
+.description-item .description-heading {
   font-weight: 700;
-  margin-bottom: 16px;
+  font-size: 1.05rem;
+  color: hsl(var(--heading-color));
+  margin: 1.35rem 0 0.75rem;
+  line-height: 1.4;
+}
+
+.description-item h4:first-child,
+.description-item .description-heading:first-child,
+.description-item > p:first-child {
+  margin-top: 0;
 }
 
 .description-item p {
   margin-top: 0;
   margin-bottom: 15px;
+  max-width: 72ch;
 }
 
 .description-item ul {
-  margin-bottom: 20px;
+  margin: 0 0 1.25rem;
+  padding-left: 0;
+  list-style: none;
 }
 
 .description-item ul:last-child {
@@ -2983,20 +3005,37 @@ button.owl-next.disabled {
 }
 
 .description-item ul li {
-  padding: 0;
-  margin-bottom: 12px;
-  padding-left: 0px !important;
+  position: relative;
+  padding: 0 0 0 1.15rem !important;
+  margin-bottom: 10px;
+  line-height: 1.6;
 }
 
 .description-item ul li::before {
   content: "\f101";
   font-family: "Line Awesome Free";
-  font-weight: 600;
+  font-weight: 900;
   color: hsl(var(--base));
-  margin-right: 5px;
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 .description-item ul li:last-child {
+  margin-bottom: 0;
+}
+
+.description-extra {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid hsl(var(--border));
+}
+
+.description-extra-block + .description-extra-block {
+  margin-top: 1.15rem;
+}
+
+.description-extra-body p:last-child {
   margin-bottom: 0;
 }
 
@@ -5080,8 +5119,19 @@ small,
 
 /* product description css start here */
 .products-description {
-  border: 1px solid hsl(var(--border)) e5;
+  border: 1px solid hsl(var(--border));
   border-radius: 5px;
+  padding: 16px 20px 22px;
+}
+
+.products-description .tab-content {
+  padding-top: 4px;
+}
+
+@media (max-width: 575px) {
+  .products-description {
+    padding: 12px 14px 18px;
+  }
 }
 
 .product-details-title h4 {

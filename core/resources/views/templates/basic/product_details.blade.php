@@ -69,25 +69,26 @@
 
                                     @if ($description || $product->extra_descriptions)
                                         <div class="tab-pane fade" id="description">
+                                            <div class="product-description-content">
+                                                @if ($description)
+                                                    <div class="description-item">
+                                                        @php echo $product->description @endphp
+                                                    </div>
+                                                @endif
 
-                                            @if ($description)
-                                                <div class="description-item">
-                                                    @php echo $product->description @endphp
-                                                </div>
-                                            @endif
-
-                                            @if ($product->extra_descriptions)
-                                                <div class="description-item mt-5">
-                                                    @foreach ($product->extra_descriptions as $description)
-                                                        <h4>{{ __(@$description['key']) }}</h4>
-                                                        <p>
-                                                            @php
-                                                                echo @$description['value'];
-                                                            @endphp
-                                                        </p>
-                                                    @endforeach
-                                                </div>
-                                            @endif
+                                                @if ($product->extra_descriptions)
+                                                    <div class="description-item description-extra">
+                                                        @foreach ($product->extra_descriptions as $extraBlock)
+                                                            <div class="description-extra-block">
+                                                                <h4 class="description-heading">{{ __(@$extraBlock['key']) }}</h4>
+                                                                <div class="description-extra-body">
+                                                                    @php echo @$extraBlock['value'] @endphp
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
                                         </div>
                                     @endif
 

@@ -16,6 +16,12 @@ use Illuminate\Http\Request;
  */
 class CartManager
 {
+    /**
+     * Static cart limits. These are intentionally hard-coded as requested.
+     */
+    public const MAX_UNIQUE_PRODUCTS = 3;
+    public const MAX_QUANTITY_PER_PRODUCT = 5;
+
 
     private function userCartQuery()
     {
@@ -67,13 +73,57 @@ class CartManager
                 ->first();
 
             if ($existingCart && !$existingCart->product->is_downloadable) {
-                $existingCart->quantity += $cartItem->quantity;
-                $existingCart->save();
-                $cartItem->delete();
+                $requestedQuantity = $existingCart->quantity + $cartItem->quantity;
+
+                // Never allow a guest-to-user cart merge to bypass the static limits.
+                $otherQuantity = Cart::where('user_id', auth()->id())
+                    ->where('product_id', $cartItem->product_id)
+                    ->where('id', '!=', $existingCart->id)
+                    ->sum('quantity');
+
+                $mergedProductQuantity = $otherQuantity + $requestedQuantity;
+                if ($mergedProductQuantity <= self::MAX_QUANTITY_PER_PRODUCT) {
+                    $existingCart->quantity = $requestedQuantity;
+                    $existingCart->save();
+                    $cartItem->delete();
+                } else {
+                    // Keep the existing user's cart valid and discard the incoming duplicate item.
+                    $cartItem->delete();
+                }
             }
         }
 
-        Cart::where('session_id', getSessionId())->update(['user_id' => auth()->id()]);
+        $sessionItems = Cart::where('session_id', getSessionId())->where('user_id', 0)->get();
+        $existingUserProductIds = Cart::where('user_id', auth()->id())->pluck('product_id')->unique()->values();
+
+        foreach ($sessionItems as $cartItem) {
+            $productAlreadyInUserCart = $existingUserProductIds->contains($cartItem->product_id);
+            $uniqueProductCount = $existingUserProductIds->count();
+
+            if (!$productAlreadyInUserCart && $uniqueProductCount >= self::MAX_UNIQUE_PRODUCTS) {
+                $cartItem->delete();
+                continue;
+            }
+
+            $otherQuantity = Cart::where('user_id', auth()->id())
+                ->where('product_id', $cartItem->product_id)
+                ->sum('quantity');
+
+            if ($otherQuantity + $cartItem->quantity > self::MAX_QUANTITY_PER_PRODUCT) {
+                $cartItem->quantity = max(0, self::MAX_QUANTITY_PER_PRODUCT - $otherQuantity);
+                if ($cartItem->quantity > 0) {
+                    $cartItem->user_id = auth()->id();
+                    $cartItem->save();
+                } else {
+                    $cartItem->delete();
+                }
+            } else {
+                $cartItem->user_id = auth()->id();
+                $cartItem->save();
+            }
+
+            $existingUserProductIds = Cart::where('user_id', auth()->id())->pluck('product_id')->unique()->values();
+        }
     }
 
     public function getSingleCartItem($id)
@@ -205,6 +255,96 @@ class CartManager
         }
 
         return [$variant, $error];
+    }
+
+    /**
+     * Validate the cart-wide and product-wide static limits.
+     *
+     * Product quantity is aggregated across all variants of the same product,
+     * so a customer cannot bypass the 5-unit limit by selecting different variants.
+     *
+     * @param int $productId
+     * @param int $requestedQuantity Total quantity for this product after the change
+     * @param int|null $excludeCartItemId Existing cart row being updated
+     * @return array|null Returns an error array when a limit is exceeded.
+     */
+    public function validateCartLimits($productId, $requestedQuantity, $excludeCartItemId = null)
+    {
+        $requestedQuantity = (int) $requestedQuantity;
+
+        if ($requestedQuantity < 1) {
+            return ['error' => 'Product quantity must be at least 1'];
+        }
+
+        if ($requestedQuantity > self::MAX_QUANTITY_PER_PRODUCT) {
+            return [
+                'error' => 'You can add a maximum of ' . self::MAX_QUANTITY_PER_PRODUCT . ' units of the same product to your cart.'
+            ];
+        }
+
+        $query = $this->userCartQuery()->where('product_id', $productId);
+        if ($excludeCartItemId) {
+            $query->where('id', '!=', $excludeCartItemId);
+        }
+
+        $existingProductQuantity = (int) $query->sum('quantity');
+        $finalProductQuantity = $existingProductQuantity + $requestedQuantity;
+
+        if ($finalProductQuantity > self::MAX_QUANTITY_PER_PRODUCT) {
+            return [
+                'error' => 'You can add a maximum of ' . self::MAX_QUANTITY_PER_PRODUCT . ' units of the same product to your cart.'
+            ];
+        }
+
+        $productAlreadyInCart = $this->userCartQuery()
+            ->where('product_id', $productId)
+            ->exists();
+
+        if (!$productAlreadyInCart) {
+            $uniqueProducts = $this->userCartQuery()->distinct('product_id')->count('product_id');
+
+            if ($uniqueProducts >= self::MAX_UNIQUE_PRODUCTS) {
+                return [
+                    'error' => 'You can have a maximum of ' . self::MAX_UNIQUE_PRODUCTS . ' different products in your cart.'
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Validate every current cart row before checkout. This is the final
+     * server-side guard against manipulated requests or stale sessions.
+     */
+    public function validateWholeCart($cartData = null)
+    {
+        $cartData = $cartData ?? $this->getCart();
+
+        if ($cartData->isEmpty()) {
+            return null;
+        }
+
+        $uniqueProducts = $cartData->pluck('product_id')->unique()->count();
+        if ($uniqueProducts > self::MAX_UNIQUE_PRODUCTS) {
+            return [
+                'error' => 'You can have a maximum of ' . self::MAX_UNIQUE_PRODUCTS . ' different products in your cart.'
+            ];
+        }
+
+        $quantities = $cartData->groupBy('product_id')->map(function ($items) {
+            return (int) $items->sum('quantity');
+        });
+
+        foreach ($quantities as $quantity) {
+            if ($quantity > self::MAX_QUANTITY_PER_PRODUCT) {
+                return [
+                    'error' => 'You can add a maximum of ' . self::MAX_QUANTITY_PER_PRODUCT . ' units of the same product to your cart.'
+                ];
+            }
+        }
+
+        return null;
     }
 
     public function checkCartQuantity($product, $variant, $stockQuantity, $cartQuantity)

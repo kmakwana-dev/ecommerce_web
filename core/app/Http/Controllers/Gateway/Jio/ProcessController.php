@@ -26,6 +26,7 @@ namespace App\Http\Controllers\Gateway\Jio;
 
 use App\Constants\Status;
 use App\Models\Deposit;
+use App\Services\PaymentVelocityValidator;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Gateway\PaymentController;
 use Illuminate\Http\Request;
@@ -178,6 +179,22 @@ class ProcessController extends Controller
             if ($deposit->status == Status::PAYMENT_INITIATE) {
                 $paidAmount = (float)($response['payer_amount'] ?? $response['amount'] ?? 0);
                 if (round($deposit->final_amount, 2) <= $paidAmount) {
+                    // Static anti-velocity rule: if the gateway gives us a
+                    // payer VPA, reject another successful transaction from
+                    // that VPA inside the fixed 10-minute window.
+                    if (!PaymentVelocityValidator::allows($deposit, $payload)) {
+                        $deposit->status = Status::PAYMENT_REJECT;
+                        $deposit->detail = array_merge($payload, [
+                            '_validation' => [
+                                'rule' => 'same_vpa_velocity',
+                                'window_minutes' => 10,
+                                'result' => 'rejected',
+                            ],
+                        ]);
+                        $deposit->save();
+                        return response()->json(['responseMessage' => 'Successful', 'returnCode' => '0']);
+                    }
+
                     $deposit->detail = $payload;
                     $deposit->save();
                     PaymentController::userDataUpdate($deposit);
@@ -296,6 +313,25 @@ class ProcessController extends Controller
                 if ($isSuccess) {
                     $paidAmount = (float)($data['payer_amount'] ?? $data['amount'] ?? 0);
                     if (round($deposit->final_amount, 2) <= $paidAmount) {
+                        // Apply the same static VPA velocity rule to polling
+                        // as to the webhook path so either payment completion
+                        // path cannot bypass the protection.
+                        if (!PaymentVelocityValidator::allows($deposit, $result)) {
+                            $deposit->status = Status::PAYMENT_REJECT;
+                            $deposit->detail = array_merge($result, [
+                                '_validation' => [
+                                    'rule' => 'same_vpa_velocity',
+                                    'window_minutes' => 10,
+                                    'result' => 'rejected',
+                                ],
+                            ]);
+                            $deposit->save();
+                            return response()->json([
+                                'status' => 'failed',
+                                'message' => 'Payment rejected. Multiple transactions from the same UPI ID are not allowed within a short period.',
+                            ]);
+                        }
+
                         $deposit->detail = $result;
                         $deposit->save();
                         PaymentController::userDataUpdate($deposit);

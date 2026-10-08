@@ -91,6 +91,14 @@ class CartController extends Controller
         $cartItem      = $this->cartManager->getSingleCartItemByProduct($productId, @$variant->id);
 
         $cartQuantity  = ($cartItem->quantity ?? 0) + $request->quantity;
+
+        // Fast static limit: the same product cannot be accumulated above the
+        // per-email allowance in the cart. Final server-side validation also
+        // runs during checkout against previous successful orders.
+        if ($cartQuantity > 1) {
+            return errorResponse('Only 1 unit of the same product can be purchased using one email address.');
+        }
+
         $checkQuantity = $this->cartManager->checkCartQuantity($product, $variant, $stockQuantity, $cartQuantity);
 
         if (isset($checkQuantity['error'])) {
@@ -134,6 +142,10 @@ class CartController extends Controller
         $variant = $cartItem->productVariant;
 
         $stockQuantity = $product->inStock($variant);
+
+        if ((int) $request->quantity > 1) {
+            return errorResponse('Only 1 unit of the same product can be purchased using one email address.', ['quantity' => $cartItem->quantity]);
+        }
 
         $checkQuantity = $this->cartManager->checkCartQuantity($cartItem->product, $variant, $stockQuantity,  $request->quantity);
         if (isset($checkQuantity['error'])) {

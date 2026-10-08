@@ -92,11 +92,12 @@ class CartController extends Controller
 
         $cartQuantity  = ($cartItem->quantity ?? 0) + $request->quantity;
 
-        // Fast static limit: the same product cannot be accumulated above the
-        // per-email allowance in the cart. Final server-side validation also
-        // runs during checkout against previous successful orders.
-        if ($cartQuantity > 1) {
-            return errorResponse('Only 1 unit of the same product can be purchased using one email address.');
+        // Static cart limits: max 3 unique products and max 5 total units per product.
+        // Product quantity is aggregated across variants to prevent variant-based bypasses.
+        $requestedDelta = (int) $request->quantity;
+        $cartLimit = $this->cartManager->validateCartLimits($productId, $requestedDelta);
+        if ($cartLimit) {
+            return errorResponse($cartLimit['error']);
         }
 
         $checkQuantity = $this->cartManager->checkCartQuantity($product, $variant, $stockQuantity, $cartQuantity);
@@ -141,11 +142,18 @@ class CartController extends Controller
         $product = $cartItem->product;
         $variant = $cartItem->productVariant;
 
-        $stockQuantity = $product->inStock($variant);
+        // The 5-unit limit applies to the product as a whole, not each variant row.
+        $cartLimit = $this->cartManager->validateCartLimits(
+            $product->id,
+            (int) $request->quantity,
+            $cartItem->id
+        );
 
-        if ((int) $request->quantity > 1) {
-            return errorResponse('Only 1 unit of the same product can be purchased using one email address.', ['quantity' => $cartItem->quantity]);
+        if ($cartLimit) {
+            return errorResponse($cartLimit['error'], ['quantity' => $cartItem->quantity]);
         }
+
+        $stockQuantity = $product->inStock($variant);
 
         $checkQuantity = $this->cartManager->checkCartQuantity($cartItem->product, $variant, $stockQuantity,  $request->quantity);
         if (isset($checkQuantity['error'])) {

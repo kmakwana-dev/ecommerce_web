@@ -6,6 +6,7 @@ use App\Constants\Status;
 use App\Http\Controllers\Controller;
 use App\Lib\CartManager;
 use App\Lib\ProductManager;
+use App\Services\PurchaseLimitValidator;
 use App\Models\AdminNotification;
 use App\Models\AppliedCoupon;
 use App\Models\GatewayCurrency;
@@ -74,6 +75,15 @@ class PaymentController extends Controller {
             $notify[] = ['error', $checkPrice['message']];
             return to_route('cart.page')->withNotify($notify);
         }
+
+        // Static anti-duplicate purchase validation. This is intentionally
+        // server-side and runs immediately before order creation so changing
+        // the frontend/cart request cannot bypass the rule.
+        $purchaseEmail = auth()->check()
+            ? auth()->user()->email
+            : data_get(session('guest_user_data'), 'email');
+
+        PurchaseLimitValidator::validateCart($cartData, $purchaseEmail);
 
         $subtotal = $this->cartManager->subtotal();
         $coupon   = $this->appliedCoupon($cartData, $subtotal);

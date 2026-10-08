@@ -28,15 +28,21 @@ class SimulateStock extends Command
             $this->line("<comment>[Simulated Sale]</comment> {$product->name} (Stock: {$product->in_stock} -> {$newStock})");
         }
 
-        // 2. Also decrease stock on random size variants for published products
-        DB::statement("
-            UPDATE product_variants pv
-            JOIN products p ON pv.product_id = p.id
-            SET pv.in_stock = GREATEST(1, pv.in_stock - 1)
-            WHERE p.is_published = 1 AND pv.is_published = 1 AND pv.in_stock > 1
-            ORDER BY RAND()
-            LIMIT 5
-        ");
+        // 2. Decrease stock on random size variants for published products
+        $variantIds = DB::table('product_variants as pv')
+            ->join('products as p', 'pv.product_id', '=', 'p.id')
+            ->where('p.is_published', 1)
+            ->where('pv.is_published', 1)
+            ->where('pv.in_stock', '>', 1)
+            ->inRandomOrder()
+            ->limit(5)
+            ->pluck('pv.id');
+
+        if ($variantIds->isNotEmpty()) {
+            DB::table('product_variants')
+                ->whereIn('id', $variantIds)
+                ->decrement('in_stock', 1);
+        }
 
         // 3. Count current Out-Of-Stock published products
         $currentOos = DB::table('products')
